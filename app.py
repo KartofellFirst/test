@@ -75,6 +75,7 @@ def home():
 
 @app.route("/awake")
 def for_awake():
+    print("website pinged by UptimeRobot")
     return "Now I`m awake, thank you!"
 
 @app.route("/play", methods=["POST"])
