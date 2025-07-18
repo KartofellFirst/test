@@ -73,6 +73,10 @@ def home():
     print("hello")
     return render_template("index.html")
 
+@app.route("/awake")
+def for_awake():
+    return "Now I`m awake, thank you!"
+
 @app.route("/play", methods=["POST"])
 def download():
     data = request.get_json()
