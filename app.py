@@ -15,7 +15,7 @@ def clean_old_files():
         if now - ts > MAX_FILE_AGE:
             delete_file(name)
 
-def download_fil_simple(url, filename):
+def download_file(url, filename):
     folder = os.path.join("static", "din")
     os.makedirs(folder, exist_ok=True)
     filepath = os.path.join(folder, filename)
