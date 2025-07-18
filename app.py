@@ -25,6 +25,8 @@ def download_file(url, filename):
         print("❌ Превышен лимит размера папки")
         return False
 
+    chunk_size = 1024 * 1024  # ← добавили!
+
     try:
         response = requests.get(url, stream=True)
         with open(filepath, "wb") as f:
@@ -33,6 +35,7 @@ def download_file(url, filename):
                     f.write(chunk)
 
         spawntime[filename] = time.time()
+        print(f"✅ Файл {filename} загружен успешно")
         return True
 
     except Exception as e:
