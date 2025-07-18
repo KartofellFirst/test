@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-import os
+import os, glob
 import requests
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -8,7 +8,6 @@ app = Flask(__name__)
 spawntime = {}
 MAX_FOLDER_SIZE = 400 * 1024 * 1024  # 400MB
 MAX_FILE_AGE = 900  # 15 минут
-chunk_size = 1024 * 1024  # 1MB
 
 def clean_old_files():
     now = time.time()
@@ -16,7 +15,7 @@ def clean_old_files():
         if now - ts > MAX_FILE_AGE:
             delete_file(name)
 
-def download_file_threaded(url, filename):
+def download_file_simple(url, filename):
     folder = os.path.join("static", "din")
     os.makedirs(folder, exist_ok=True)
     filepath = os.path.join(folder, filename)
@@ -27,32 +26,19 @@ def download_file_threaded(url, filename):
         return False
 
     try:
-        start_time = time.time()
         response = requests.get(url, stream=True)
-        total_size = int(response.headers.get('content-length', 0))
-        ranges = [(i, min(i + chunk_size - 1, total_size - 1)) for i in range(0, total_size, chunk_size)]
-
-        def write_chunk(start, end):
-            headers = {'Range': f'bytes={start}-{end}'}
-            res = requests.get(url, headers=headers, stream=True)
-            return (start, res.content)
-
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            futures = [executor.submit(write_chunk, start, end) for start, end in ranges]
-            chunks = sorted([future.result() for future in futures], key=lambda x: x[0])
-
         with open(filepath, "wb") as f:
-            for _, data in chunks:
-                f.write(data)
+            for chunk in response.iter_content(chunk_size):
+                if chunk:
+                    f.write(chunk)
 
-        duration = time.time() - start_time
         spawntime[filename] = time.time()
-        print(f"✅ Скачано: {filename}, время: {duration:.2f} сек")
         return True
 
     except Exception as e:
-        print(f"❌ Ошибка загрузки: {e}")
+        print(f"❌ Ошибка обычной загрузки: {e}")
         return False
+        
 def file_exists(filename):
     filepath = os.path.join("static", "din", filename)
     return os.path.isfile(filepath)
@@ -72,6 +58,19 @@ def get_folder_size(path="static/din"):
             fp = os.path.join(dirpath, f)
             total_size += os.path.getsize(fp)
     return total_size  # в байтах
+    
+
+with app.app_context():
+    folder = os.path.join("static", "din")
+    os.makedirs(folder, exist_ok=True)
+    
+    for path in glob.glob(os.path.join(folder, "*")):
+        if os.path.isfile(path):
+            os.remove(path)
+    
+    spawntime.clear()
+    print("🧼 static/din очищена при запуске WSGI-приложения")
+    
 
 @app.route("/")
 def home():
@@ -83,47 +82,15 @@ def for_awake():
     print("website pinged by UptimeRobot")
     return "Now I`m awake, thank you!"
 
-def download_file_simple(url, filename):
-    folder = os.path.join("static", "din")
-    os.makedirs(folder, exist_ok=True)
-    filepath = os.path.join(folder, filename)
-
-    clean_old_files()
-    if get_folder_size(folder) > MAX_FOLDER_SIZE:
-        print("❌ Превышен лимит размера папки")
-        return False
-
-    try:
-        start_time = time.time()
-        response = requests.get(url, stream=True)
-        with open(filepath, "wb") as f:
-            for chunk in response.iter_content(chunk_size):
-                if chunk:
-                    f.write(chunk)
-
-        duration = time.time() - start_time
-        spawntime[filename] = time.time()
-        print(f"💧 Обычная: {duration:.2f} сек")
-        return True
-
-    except Exception as e:
-        print(f"❌ Ошибка обычной загрузки: {e}")
-        return False
-
-
 @app.route("/play", methods=["POST"])
 def download():
     data = request.get_json()
     url = "https://drive.google.com/uc?export=download&id=1g8wZM8On54kOHTI21fssDZEr-iXZfzBn"
     filename = "1.mp3"
     start = time.time()
-    success = download_file_threaded(url, filename)
+    download_file(url, filename)
     end = time.time()
-    print(f"⏳ Время загрузки threading: {end - start:.2f} секунд")
-    start = time.time()
-    download_file_simple(url, "simple.mp3")
-    end = time.time()
-    print(f"⏳ Время загрузки simple: {end - start:.2f} секунд")
+    print(f"⏳ Время загрузки: {end - start:.2f} секунд")
     return jsonify({"success": success, "filename": "static/din/" + filename})
 
 @app.route("/delete", methods=["POST"])
