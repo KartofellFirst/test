@@ -36,9 +36,13 @@ async def download_async(url, filename, workers=8):
         return
 
     try:
-        async with aiohttp.ClientSession() as session:
-            head = await session.head(url)
-            total_size = int(head.headers.get("Content-Length", 0))
+        async with session.get(url, headers={"Range": "bytes=0-1"}) as resp:
+            content_range = resp.headers.get("Content-Range")
+            if content_range:
+                total_size = int(content_range.split("/")[-1])
+            else:
+                total_size = int(resp.headers.get("Content-Length", 0))
+
             ranges = [(i, min(i + chunk_size - 1, total_size - 1)) for i in range(0, total_size, chunk_size)]
 
             tasks = [fetch_chunk(session, url, start, end) for start, end in ranges[:workers]]
