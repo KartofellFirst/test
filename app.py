@@ -88,7 +88,7 @@ def download():
     url = "https://drive.google.com/uc?export=download&id=1g8wZM8On54kOHTI21fssDZEr-iXZfzBn"
     filename = "1.mp3"
     start = time.time()
-    download_file(url, filename)
+    success = download_file(url, filename)
     end = time.time()
     print(f"⏳ Время загрузки: {end - start:.2f} секунд")
     return jsonify({"success": success, "filename": "static/din/" + filename})
