@@ -2,51 +2,62 @@ from flask import Flask, render_template, request, jsonify
 import os
 import requests
 import time
+import aiohttp
+import asyncio
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 spawntime = {}
 MAX_FOLDER_SIZE = 400 * 1024 * 1024  # 400MB
 MAX_FILE_AGE = 900  # 15 минут
+chunk_size = 1024 * 1024  # 1MB
 
-def download_file_multithreaded(url, filename):
+def clean_old_files():
+    now = time.time()
+    for name, ts in list(spawntime.items()):
+        if now - ts > MAX_FILE_AGE:
+            delete_file(name)
+
+async def fetch_chunk(session, url, start, end):
+    headers = {'Range': f'bytes={start}-{end}'}
+    async with session.get(url, headers=headers) as resp:
+        return await resp.read()
+
+async def download_async(url, filename, workers=8):
     folder = os.path.join("static", "din")
     os.makedirs(folder, exist_ok=True)
-
-    # clean old files
-    now = time.time()
-    for filename, timestamp in list(spawntime.items()):
-        if now - timestamp > MAX_FILE_AGE:
-            delete_file(filename)
-
-    # monitoring
-    if get_folder_size(folder) > MAX_FOLDER_SIZE:
-        print("❌ Превышен лимит размера папки")
-        return False
-    
     filepath = os.path.join(folder, filename)
 
+    # 🧹 Очистка
+    clean_old_files()
+    if get_folder_size(folder) > MAX_FOLDER_SIZE:
+        print("❌ Превышен лимит размера папки")
+        return
+
     try:
-        response = requests.get(url, stream=True)
-        total_size = int(response.headers.get('content-length', 0))
-        chunk_size = 1024 * 1024  # 1MB
-        chunks = []
+        async with aiohttp.ClientSession() as session:
+            head = await session.head(url)
+            total_size = int(head.headers.get("Content-Length", 0))
+            ranges = [(i, min(i + chunk_size - 1, total_size - 1)) for i in range(0, total_size, chunk_size)]
 
-        def write_chunk(start):
-            headers = {'Range': f'bytes={start}-{start + chunk_size - 1}'}
-            r = requests.get(url, headers=headers, stream=True)
-            return r.content
+            tasks = [fetch_chunk(session, url, start, end) for start, end in ranges[:workers]]
+            start_time = time.time()
+            chunks = await asyncio.gather(*tasks)
+            end_time = time.time()
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            futures = [executor.submit(write_chunk, i) for i in range(0, total_size, chunk_size)]
-            with open(filepath, 'wb') as f:
-                for future in futures:
-                    f.write(future.result())
+            with open(filepath, "wb") as f:
+                for chunk in chunks:
+                    f.write(chunk)
 
-        return True
+            spawntime[filename] = time.time()
+            print(f"⚡ Загрузка завершена за {end_time - start_time:.2f} сек")
+
     except Exception as e:
-        print(f"Download failed: {e}")
-        return False
+        print(f"❌ Ошибка загрузки: {e}")
+
+def download_file_async_background(url: str, filename: str):
+    threading.Thread(target=lambda: asyncio.run(download_async(url, filename))).start()
 
 def file_exists(filename):
     filepath = os.path.join("static", "din", filename)
@@ -84,7 +95,7 @@ def download():
     url = "https://drive.google.com/uc?export=download&id=1g8wZM8On54kOHTI21fssDZEr-iXZfzBn"
     filename = "1.mp3"
     start = time.time()
-    success = download_file_multithreaded(url, filename)
+    success = download_file_async_background(url, filename)
     end = time.time()
     print(f"⏳ Время загрузки: {end - start:.2f} секунд")
     return jsonify({"success": success, "filename": "static/din/" + filename})
