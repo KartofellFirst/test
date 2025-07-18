@@ -1,1 +1,39 @@
-рудд
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Аудио загрузка</title>
+</head>
+<body>
+    <button id="spawn">🎵 Заспавнить аудио</button>
+    <div id="player"></div>
+
+    <script>
+        document.getElementById("spawn").addEventListener("click", async () => {
+            const res = await fetch("/play", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                const audio = document.createElement("audio");
+                audio.src = data.filename;
+                audio.controls = true;
+                audio.autoplay = true;
+
+                audio.addEventListener("canplaythrough", async () => {
+                    await fetch("/delete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ filename: "1.mp3" })
+                    });
+                }, { once: true });
+
+                document.getElementById("player").appendChild(audio);
+            }
+        });
+    </script>
+</body>
+</html>
