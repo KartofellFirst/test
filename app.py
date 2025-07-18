@@ -56,20 +56,21 @@ def delete_file(filename):
 
 @app.route("/")
 def home():
-    print(hello)
+    print("hello")
     return render_template("index.html")
 
 @app.route("/play", methods=["POST"])
 def download():
     data = request.get_json()
     url = "https://drive.google.com/uc?export=download&id=1g8wZM8On54kOHTI21fssDZEr-iXZfzBn"
-    filename = "1"
+    filename = "1.mp3"
     success = download_file_multithreaded(url, filename)
-    return jsonify({"success": success, "filename": filename})
+    return jsonify({"success": success, "filename": "static/din/" + filename})
 
 @app.route("/delete", methods=["POST"])
 def delete():
     data = request.get_json()
     filename = data.get("filename")
+    print("deleted" + filename)
     success = delete_file(filename)
     return jsonify({"success": success})
