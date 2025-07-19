@@ -219,6 +219,20 @@ def search_by_title():
 
     return jsonify(results)
 
+@app.route("/download-link", methods=["POST"])
+def get_download_link():
+    data = request.get_json()
+    title = data.get("title")
+    author = data.get("author")
+
+    # Пример запроса к MusicAPI
+    response = requests.get(f"http://your-musicapi.com/search?title={title}&artist={author}")
+    if response.status_code == 200:
+        result = response.json()
+        return jsonify({"url": result["download_url"]})
+    else:
+        return jsonify({"error": "not found"}), 404
+
 @app.route("/usage", methods=["GET"])
 def total_project_usage():
     path = "."
