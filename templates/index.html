@@ -19,6 +19,21 @@
           height: 300px;
           border: 1px solid #444;
         }
+
+        .screen-input {
+          border: none;
+          color: #fff;
+          background: #333;
+          padding: 3px;
+        }
+
+        .screen-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: 96vw;
+            margin-left: 2vw;
+            overflow: hidden;
+        }
         
         @keyframes blink {
           50% { opacity: 0; }
@@ -30,7 +45,7 @@
     <div id="player"></div>
     <span id="monitor"></span>
     <br><hr>
-    <div style="display: flex;flex-direction: column;width: 800px;overflow: hidden;"><div id="screen"></div><input onchange="Send(this.value)"></div>
+    <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
 
     <script>
         Show("Hello!")
@@ -103,6 +118,7 @@
         }
 
         async function Send(message) {
+            document.getElementById("screen").textContent += `$You>>> ${message}\n`
             const response = await fetch('/api/generate-content', {
                 method: 'POST',
                 headers: {
@@ -118,7 +134,7 @@
         }
 
         function Show(text, delay=100) {
-          text += "\n"
+          text = `$Server>>> ${text}\n`
           const target = document.getElementById("screen");
           let index = 0;
           const cursor = document.createElement('span');
