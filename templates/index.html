@@ -30,7 +30,7 @@
     <div id="player"></div>
     <span id="monitor"></span>
     <br><hr>
-    <div id="screen"></div>
+    <div style="display: flex;flex-direction: column;width: 800px;overflow: hidden;"><div id="screen"></div><input onchange="Send(this.value)"></div>
 
     <script>
         Show("Hello!")
@@ -102,7 +102,7 @@
             return data;
         }
 
-        async function test(message) {
+        async function Send(message) {
             const response = await fetch('/api/generate-content', {
                 method: 'POST',
                 headers: {
@@ -113,8 +113,7 @@
     
             if (response.ok) {
                 const data = await response.json();
-                console.log(data.text)
-                // fromGPT(data.text)
+                Show(data.text);
             }
         }
 
