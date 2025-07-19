@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Аудио загрузка</title>
     <style>
         .cursor {
@@ -25,6 +26,8 @@
           color: #fff;
           background: #333;
           padding: 3px;
+          font-size: 16px;
+		  border-radius: 0px;
         }
 
         .screen-wrapper {
@@ -118,7 +121,7 @@
         }
 
         async function Send(message) {
-            document.getElementById("screen").textContent += `$You>>> ${message}\n`
+            document.getElementById("screen").textContent += `$You>>> ${message}`
             const response = await fetch('/api/generate-content', {
                 method: 'POST',
                 headers: {
