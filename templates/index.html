@@ -288,7 +288,7 @@
 		  fetch("/load", {
 		    method: "POST",
 		    headers: { "Content-Type": "application/json" },
-		    body: JSON.stringify({ name: title, author, url, genres: checkedGenres })
+		    body: JSON.stringify({ name: title, author: author, url: url, genres: checkedGenres })
 		  }).then(res => res.json())
 		    .then(data => {
 		      console.log("Uploaded:", data);
