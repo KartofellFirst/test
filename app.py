@@ -114,3 +114,22 @@ def report():
     data = request.get_json()
     text = data.get("filename")
     print(f"[REPORT] >>>>>>>>>>>>>>>> {text}")
+
+@app.route('/api/generate-content', methods=['POST'])
+def generate_content():
+    try:
+        data = request.json
+        message = data.get('message', '')
+        api_key = "AIzaSyD5JIMcx_G0OX16geB1i4Hshfcag6dN2DY"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+        payload = { "contents": [{ "parts": [{"text": message}] }] }
+        headers = { 'Content-Type': 'application/json' }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            data = response.json()
+            text = data['candidates'][0]['content']['parts'][0]['text']
+            return jsonify({'text': text})
+        else:
+            return jsonify({"error": "Ошибка при отправке запроса: " + response.text}), response.status_code
+    except Exception as e:
+        return jsonify({"error": f"Ошибка при обработке запроса: {str(e)}"}), 500
