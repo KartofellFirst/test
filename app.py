@@ -216,6 +216,18 @@ def search_by_title():
                 results.append({"id": row[0], "title": row[2], "author": row[3]})
     return jsonify(results)
 
+@app.route("/usage", methods=["GET"])
+def total_project_usage():
+    path = "."
+    total_size = 0
+    for dirpath, _, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            if os.path.isfile(fp):
+                total_size += os.path.getsize(fp)
+    size_in_mb = round(total_size / 1024 / 1024, 2)
+    return jsonify({"total_size_mb": size_in_mb})
+
 @app.route('/api/generate-content', methods=['POST'])
 def generate_content():
     try:
