@@ -131,7 +131,6 @@
 
         async function Send(message) {
             document.getElementById("screen").textContent += `$You>>> ${message}\n`
-            ULM = message;
             const response = await fetch('/api/generate-content', {
                 method: 'POST',
                 headers: {
@@ -143,6 +142,7 @@
             if (response.ok) {
                 const data = await response.json();
                 BLM = data.text;
+            	ULM = message;
                 Show(data.text.replace("\n", ""));
             }
         }
