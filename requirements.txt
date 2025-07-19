@@ -3,4 +3,3 @@ aiohttp
 requests
 gunicorn
 numpy
-librosa --no-cache-dir --no-deps
