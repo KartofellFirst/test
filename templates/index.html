@@ -7,9 +7,14 @@
 <body>
     <button id="spawn">🎵 Заспавнить аудио</button>
     <div id="player"></div>
+    <span id="monitor"></span>
+    <br><hr>
+    <span id="screen"></span>
 
     <script>
+        Show("Hello!")
         document.getElementById("spawn").addEventListener("click", async () => {
+            Show("Downloading your file...")
             const res = await fetch("/play", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -18,6 +23,7 @@
             const data = await res.json();
 
             if (data.success) {
+                Show("Media loaded, creating audio tag...")
                 const audio = document.createElement("audio");
                 audio.src = data.filename;
                 audio.controls = true;
@@ -29,11 +35,53 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ filename: "1.mp3" })
                     });
+                    Show("Saved to cache, removing file from server...")
                 }, { once: true });
 
+                audio.addEventListener("error", async () => {
+                    Show("Redownloading the file on server");
+                    const res2 = await fetch("/play", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({})
+                    });
+                    const data2 = await res2.json();
+                    if (!data2.succes) { 
+                        await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
+                        Show("Error occured, we sent a report in technical support. Please, reload the page");
+                    } else { 
+                        audio.load(); audio.play(); 
+                        Show("Playing...")
+                        audio.addEventListener("canplaythrough", async () => {
+                            await fetch("/delete", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ filename: "1.mp3" })
+                            })}, { once: true });
+                            Show("Saved to cache, removing file from server...")
+                    }
+
                 document.getElementById("player").appendChild(audio);
+                Show("Player spawned!")
+            } else {
+                await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
+                Show("Error occured, we sent a report in technical support. Please, reload the page")
             }
         });
+
+        Show(text) {
+            document.getElementById('screen').textContent += `\n${text}`; 
+            Monitor()
+        }
+
+        anync Monitor() {
+            const res = await fetch("/monitor", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+            })
+            document.getElementById('monitor').textContent = await res.json();
+            return await res.json();
+        }
     </script>
 </body>
 </html>
