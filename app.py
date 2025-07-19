@@ -121,9 +121,9 @@ def generate_content():
     try:
         data = request.json
         message = data.get('message', '')
+        ulm = data.get('ulm', 'null')
+        blm = "data.get('blm', 'null')
         resourses = int(get_folder_size() / 100000) / 10
-        ulm = "null"
-        blm = "null"
         prompt = DESCRIPTION + "Your answer must be on the same language as user question! " + f"Your current load is {resourses}/400 MB. " + f"The last 2 messages from the chat: You: '{blm}', User: '{ulm}'. Current message: "
         message = prompt + message
         api_key = "AIzaSyD5JIMcx_G0OX16geB1i4Hshfcag6dN2DY"
