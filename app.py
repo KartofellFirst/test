@@ -82,7 +82,7 @@ def get_free_index():
 
 def write_new_row(data):
     row_count = get_free_index()
-    data = [row_count, ...data]
+    data = [row_count] + data
     with open('tracks.csv', mode='a', encoding='utf-8') as file: 
         writer = csv.writer(file)
         writer.writerows(data)
