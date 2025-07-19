@@ -231,9 +231,15 @@ def generate_download():
         "limit": 1,
         "namesearch": f"{title} {author}"
     })
+    
+    json_data = res.json()
+    if json_data.get("results"):
+        track = json_data["results"][0]
+        return jsonify({"url": track["audio"]})
+    else:
+        print("❌ Трек не найден в Jamendo")
+        return jsonify({"error": "not found"}), 404
 
-    track = res.json()["results"][0]
-    return jsonify({"url": track["audio"]})
 
 @app.route("/import_page")
 def ipage():
