@@ -232,6 +232,10 @@ def get_download_link():
         return jsonify({"url": result["download_url"]})
     else:
         return jsonify({"error": "not found"}), 404
+        
+@app.route("/import_page")
+def ipage():
+    return render_template("import.html")
 
 @app.route("/usage", methods=["GET"])
 def total_project_usage():
