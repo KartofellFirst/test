@@ -4,8 +4,13 @@ import requests, json
 import time
 from concurrent.futures import ThreadPoolExecutor
 import csv
-import librosa
-import numpy as np
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+    client_id="fd90af2b1c1447669656004c905a12c4",
+    client_secret="34055e885c0a419a8e56f22d8bc3c242"
+))
 
 app = Flask(__name__)
 spawntime = {}
@@ -89,36 +94,7 @@ def write_new_row(data):
         return row_count
 
 def analize(filename):
-    y, sr = librosa.load(os.path.join("static", "din", filename))
-    # 🔁 Темп
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-    tempo_val = tempo[0] if isinstance(tempo, np.ndarray) else tempo
-    # 🎼 Тональность через chroma
-    chromagram = librosa.feature.chroma_stft(y=y, sr=sr)
-    chroma_mean = chromagram.mean(axis=1)
-    key_index = chroma_mean.argmax()
-    # key_notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-    # key = key_notes[key_index]
-    # ⚡ Энергия через RMS
-    rms = librosa.feature.rms(y=y)
-    energy = float(np.mean(rms))
-    # 🔉 Громкость (перцептивная)
-    loudness = np.mean(librosa.feature.zero_crossing_rate(y))
-    # 🎙️ Spectral Centroid (высокочастотность)
-    centroid = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
-    # 🧠 Spectral Contrast (разница между пиками и минимумами)
-    contrast = float(np.mean(librosa.feature.spectral_contrast(y=y, sr=sr)))
-    # 🎶 Roll-off — "сдвиг в сторону высоких частот"
-    rolloff = float(np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr)))
-    # 🧠 Насколько трек сложный по частотам
-    zcr = float(np.mean(librosa.feature.zero_crossing_rate(y)))
-    # 🌀 Мел-кепстральные коэффициенты (MFCC) — основа для анализа эмоций
-    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-    mfcc_mean = np.mean(mfcc, axis=1)
-
-    features = [tempo_val, key_index, energy, loudness, centroid, contrast, rolloff, zcr]
-    features.extend(mfcc_mean.tolist())
-    return features
+    return "features"
 
 with app.app_context():
     folder = os.path.join("static", "din")
@@ -209,11 +185,38 @@ def search_by_author():
 def search_by_title():
     query = request.args.get("q", "").lower()
     results = []
+
+    # 🔍 Поиск в локальном CSV
     with open("tracks.csv", mode="r", encoding="utf-8") as file:
         reader = csv.reader(file)
         for row in reader:
-            if query in row[2].lower():  # 2 — это поле названия
-                results.append({"id": row[0], "title": row[2], "author": row[3]})
+            if query in row[2].lower():  # 2 — поле названия
+                results.append({
+                    "id": row[0],
+                    "title": row[2],
+                    "author": row[3],
+                    "source": "local",
+                    "genres": row[4] if len(row) > 4 else ""  # если есть жанры
+                })
+
+    # 🔁 Если ничего не нашли — ищем в Spotify
+    if not results:
+        spotify_result = sp.search(q=query, type="track", limit=5)
+        for item in spotify_result["tracks"]["items"]:
+            artist_id = item["artists"][0]["id"]
+            artist = sp.artist(artist_id)
+            genre_list = artist.get("genres", [])
+            genres = ", ".join(genre_list) if genre_list else "unknown"
+
+            results.append({
+                "id": item["id"],
+                "title": item["name"],
+                "author": item["artists"][0]["name"],
+                "source": "spotify",
+                "genres": genres,
+                "verified": False
+            })
+
     return jsonify(results)
 
 @app.route("/usage", methods=["GET"])
