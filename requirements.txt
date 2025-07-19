@@ -2,4 +2,4 @@ flask
 aiohttp
 requests
 gunicorn
-numpy
+spotify
