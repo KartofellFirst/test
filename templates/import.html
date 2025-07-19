@@ -51,37 +51,59 @@
 	</div>
 	
 	<script>
-	// 👁️ Поиск по названию (обновляем dropdown)
-	async function searchSpotify() {
-	const query = document.getElementById("spotify-title").value;
-	const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
-	const data = await res.json();
-	
-	const dropdown = document.getElementById("spotify-dropdown");
-	dropdown.innerHTML = "";
-	data.forEach(track => {
-	  const el = document.createElement("div");
-	  el.className = "dropdown-item";
-	  el.innerHTML = `
-		<strong>${track.title}</strong> — ${track.author}
-		<br><small>Жанры: ${track.genres}</small>
-	  `;
-	  el.onclick = () => selectTrack(track);
-	  dropdown.appendChild(el);
-	});
-	}
-	
-	// 🎯 Автоматический парсинг по URL
-	async function fetchSpotifyData() {
-	const url = document.getElementById("spotify-url").value;
-	// Тут вызов к /analyze-by-url или /extract-data?url=... (нужно реализовать)
-	alert("Автопоиск по URL: пока фейковый");
-	}
-	
-	function selectTrack(track) {
-	console.log("Выбран трек:", track);
-	// Можешь добавить автозаполнение, сохранение, модерацию и прочее
-	}
-	</script>
+  let selectedTitle = null;
+  let selectedAuthor = null;
+
+  // 🔍 Автопоиск при вводе
+  document.getElementById("spotify-title").addEventListener("input", async function () {
+    const query = this.value;
+    if (!query.trim()) return;
+
+    const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    const dropdown = document.getElementById("spotify-dropdown");
+    dropdown.innerHTML = "";
+
+    data.slice(0, 3).forEach(track => {
+      const el = document.createElement("div");
+      el.className = "dropdown-item";
+      el.innerHTML = `
+        <strong>${track.title}</strong> — ${track.author}
+        <br><small>Жанры: ${track.genres}</small>
+      `;
+      el.onclick = () => {
+        selectedTitle = track.title;
+        selectedAuthor = track.author;
+        dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
+      };
+      dropdown.appendChild(el);
+    });
+  });
+
+  // 🎯 Автопоиск ссылки по имени + автору
+  async function fetchSpotifyData() {
+    if (!selectedTitle || !selectedAuthor) {
+      alert("Сначала выбери трек из списка 👆");
+      return;
+    }
+
+    const res = await fetch(`/download-link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: selectedTitle,
+        author: selectedAuthor
+      })
+    });
+
+    const result = await res.json();
+    if (result.url) {
+      alert(`Ссылка на трек: ${result.url}`);
+      // можно вставить в <audio> или создать кнопку "скачать"
+    } else {
+      alert("Ссылка не найдена или трек не доступен 😔");
+    }
+  }
+</script>
 </body>
 </html>
