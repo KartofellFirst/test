@@ -3,13 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>Аудио загрузка</title>
+    <style>
+        .cursor {
+          animation: blink 1s step-end infinite;
+          color: #fff;
+        }
+        
+        #screen {
+          font-family: 'Courier New', monospace;
+          background-color: #333;
+          color: #fff;
+          padding: 10px;
+          white-space: pre-wrap;
+          overflow-y: auto;
+          height: 300px;
+          border: 1px solid #444;
+        }
+        
+        @keyframes blink {
+          50% { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
     <button id="spawn">🎵 Заспавнить аудио</button>
     <div id="player"></div>
     <span id="monitor"></span>
     <br><hr>
-    <span id="screen"></span>
+    <div id="screen"></div>
 
     <script>
         Show("Hello!")
@@ -70,18 +91,55 @@
             }
         });
 
-        function Show (text) {
-            document.getElementById('screen').textContent += `\n${text}`; 
-            Monitor()
-        }
-
         async function Monitor() {
             const res = await fetch("/monitor", {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
             })
-            document.getElementById('monitor').textContent = await res.json();
-            return await res.json();
+            const data = await res.json();  
+            document.getElementById('monitor').textContent = data;
+            return data;
+        }
+
+        async function test(text) {
+            const response = await fetch('/api/generate-content', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            });
+    
+            if (response.ok) {
+                const data = await response.json();
+                console.log(data.text)
+                // fromGPT(data.text)
+            }
+        }
+
+        function Show(text, delay=100) {
+          const target = document.getElementById("screen");
+          let index = 0;
+          const cursor = document.createElement('span');
+          cursor.textContent = '█'; // курсор, как в cmd
+          cursor.className = 'cursor';
+          target.appendChild(cursor);
+        
+          function typeStep() {
+            if (index < text.length) {
+              const chunkSize = Math.floor(Math.random() * 4) + 2; // 2–5 символов
+              const chunk = text.slice(index, index + chunkSize);
+              cursor.insertAdjacentText('beforebegin', chunk);
+              index += chunkSize;
+              target.scrollTop = target.scrollHeight;
+              setTimeout(typeStep, delay);
+            } else {
+              cursor.remove(); // удалить курсор по завершении
+            }
+          }
+        
+          typeStep();
+          Monitor()
         }
     </script>
 </body>
