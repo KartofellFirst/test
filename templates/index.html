@@ -33,7 +33,7 @@
                     await fetch("/delete", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ filename: "1.mp3" })
+                        body: JSON.stringify({ filename: data.filename })
                     });
                     Show("Saved to cache, removing file from server...")
                 }, { once: true });
@@ -46,7 +46,7 @@
                         body: JSON.stringify({})
                     });
                     const data2 = await res2.json();
-                    if (!data2.succes) { 
+                    if (!data2.success) { 
                         await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
                         Show("Error occured, we sent a report in technical support. Please, reload the page");
                     } else { 
@@ -56,7 +56,7 @@
                             await fetch("/delete", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ filename: "1.mp3" })
+                                body: JSON.stringify({ filename: data.filename })
                             })}, { once: true });
                             Show("Saved to cache, removing file from server...")
                     }
@@ -75,7 +75,7 @@
             Monitor()
         }
 
-        anync function Monitor() {
+        async function Monitor() {
             const res = await fetch("/monitor", {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
