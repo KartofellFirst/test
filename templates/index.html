@@ -113,7 +113,7 @@
                 await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
                 Show("Error occured, we sent a report in technical support. Please, reload the page")
             }
-            Monitor()
+            setTimeout(Monitor, 1000)
         });
 
         async function Monitor() {
@@ -127,7 +127,7 @@
         }
 
         async function Send(message) {
-            document.getElementById("screen").textContent += `$You>>> ${message}`
+            document.getElementById("screen").textContent += `$You>>> ${message}\n`
             const response = await fetch('/api/generate-content', {
                 method: 'POST',
                 headers: {
@@ -138,7 +138,7 @@
     
             if (response.ok) {
                 const data = await response.json();
-                Show(data.text);
+                Show(data.text.replace("\n", ""));
             }
         }
 
