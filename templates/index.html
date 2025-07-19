@@ -4,6 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Аудио загрузка</title>
+	<style>
+		.dropdown {
+		  background: #262626;
+		  color: #fff;
+		  border: 1px solid #444;
+		  max-height: 150px;
+		  overflow-y: auto;
+		  position: absolute;
+		  z-index: 1000;
+		  width: 95%;
+		}
+		
+		.dropdown-item {
+		  padding: 5px 10px;
+		  cursor: pointer;
+		}
+		
+		.dropdown-item:hover {
+		  background: #444;
+		}
+	</style>
     <style>
         * {
             margin: 0;
@@ -50,17 +71,37 @@
     </style>
 </head>
 <body>
-    <button id="spawn">🎵 Заспавнить аудио</button>
+    <button id="spawn">🎵 Заспавнить аудио</button><button id="upload-btn">📤 Загрузить трек</button>
     <div id="player"></div>
     <span id="monitor"></span>
     <br><hr>
     <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
 
+	<div id="upload-modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%);
+	     background:#1e1e1e; color:#fff; padding:20px; border-radius:8px; z-index:1000; width:350px;">
+	  <h3>🎵 Загрузка трека</h3>
+	  <label for="track-name">Название трека:</label>
+		<input type="text" id="track-name" oninput="suggestTitle(this.value)">
+		<div id="title-suggestions" class="dropdown"></div>
+		
+		<label for="track-author">Автор:</label>
+		<input type="text" id="track-author" oninput="suggestAuthor(this.value)">
+		<div id="author-suggestions" class="dropdown"></div>
+	  <label>URL:</label>
+	  <input type="text" id="track-url">
+	  <label>Жанры:</label>
+	  <div id="genre-selector"></div>
+	  <button onclick="submitTrack()">🚀 Загрузить</button>
+	  <button onclick="closeModal()">❌ Закрыть</button>
+	</div>
+
+
     <script>
+		const genres = ["Phonk", "Pop", "Rock", "Rap / Hip-Hop", "Jazz", "Blues", "Classical", "Electronic / EDM", "Metal", "Country", "Reggae", "Folk", "R&B / Soul", "Punk", "Trance", "Techno", "House", "Dubstep", "Drum & Bass", "Indie", "Lo-fi", "Ambient", "Latin", "K-Pop", "J-Pop", "Soundtrack / OST", "Experimental", "Chillout", "Funk", "Gospel", "World / Ethnic", "Instrumental"]
         let ULM = "null";
         let BLM = "null";
         
-        Show("Hello!")
+        Show("Hello, my little client. What whould you ask?")
         document.getElementById("spawn").addEventListener("click", async () => {
             Show("Downloading your file...")
             const res = await fetch("/play", {
@@ -172,6 +213,88 @@
           typeStep();
           Monitor()
         }
+
+
+		document.getElementById("upload-btn").addEventListener("click", () => {
+		  document.getElementById("upload-modal").style.display = "block";
+		});
+		
+		function closeModal() {
+		  document.getElementById("upload-modal").style.display = "none";
+		}
+				
+		function renderGenres() {
+		  const container = document.getElementById("genre-selector");
+		  genres.forEach(g => {
+		    const label = document.createElement("label");
+		    label.innerHTML = `<input type="checkbox" value="${g}"> ${g}`;
+		    container.appendChild(label);
+		  });
+		}
+		renderGenres();
+
+		function suggestTitle(query) {
+		  if (!query) {
+		    document.getElementById("title-suggestions").innerHTML = "";
+		    return;
+		  }
+		  fetch(`/search/title?q=${query}`)
+		    .then(res => res.json())
+		    .then(data => {
+		      const container = document.getElementById("title-suggestions");
+		      container.innerHTML = "";
+		      data.forEach(item => {
+		        const div = document.createElement("div");
+		        div.className = "dropdown-item";
+		        div.textContent = item.title;
+		        div.onclick = () => {
+		          document.getElementById("track-name").value = item.title;
+		          container.innerHTML = "";
+		        };
+		        container.appendChild(div);
+		      });
+		    });
+		}
+		
+		function suggestAuthor(query) {
+		  if (!query) {
+		    document.getElementById("author-suggestions").innerHTML = "";
+		    return;
+		  }
+		  fetch(`/search/author?q=${query}`)
+		    .then(res => res.json())
+		    .then(data => {
+		      const container = document.getElementById("author-suggestions");
+		      container.innerHTML = "";
+		      data.forEach(item => {
+		        const div = document.createElement("div");
+		        div.className = "dropdown-item";
+		        div.textContent = item.author;
+		        div.onclick = () => {
+		          document.getElementById("track-author").value = item.author;
+		          container.innerHTML = "";
+		        };
+		        container.appendChild(div);
+		      });
+		    });
+		}
+
+		function submitTrack() {
+		  const title = document.getElementById("track-name").value;
+		  const author = document.getElementById("track-author").value;
+		  const url = document.getElementById("track-url").value;
+		  const checkedGenres = Array.from(document.querySelectorAll("#genre-selector input:checked")).map(el => el.value);
+		
+		  fetch("/load", {
+		    method: "POST",
+		    headers: { "Content-Type": "application/json" },
+		    body: JSON.stringify({ name: title, author, url, genres: checkedGenres })
+		  }).then(res => res.json())
+		    .then(data => {
+		      console.log("Uploaded:", data);
+		      Show("🎶 Трек загружен!");
+		    });
+		}
     </script>
 </body>
 </html>
