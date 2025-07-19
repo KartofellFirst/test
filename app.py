@@ -108,3 +108,9 @@ def delete():
 def monitor_resourses():
     calc = int(get_folder_size() / 100000) / 10
     return jsonify(calc)
+
+@app.route("/report", methods=["POST"])
+def report():
+    data = request.get_json()
+    text = data.get("filename")
+    print(f"[REPORT] >>>>>>>>>>>>>>>> {text}")
