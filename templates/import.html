@@ -53,6 +53,7 @@
 	<script>
   let selectedTitle = null;
   let selectedAuthor = null;
+  let selectedId = null;
 
   // 🔍 Автопоиск при вводе
   document.getElementById("spotify-title").addEventListener("input", async function () {
@@ -74,6 +75,7 @@
       el.onclick = () => {
         selectedTitle = track.title;
         selectedAuthor = track.author;
+	selectedId = track.id;
         dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
       };
       dropdown.appendChild(el);
@@ -82,28 +84,31 @@
 
   // 🎯 Автопоиск ссылки по имени + автору
   async function fetchSpotifyData() {
-    if (!selectedTitle || !selectedAuthor) {
-      alert("Сначала выбери трек из списка 👆");
-      return;
-    }
-
-    const res = await fetch(`/download-link`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: selectedTitle,
-        author: selectedAuthor
-      })
-    });
-
-    const result = await res.json();
-    if (result.url) {
-      alert(`Ссылка на трек: ${result.url}`);
-      // можно вставить в <audio> или создать кнопку "скачать"
-    } else {
-      alert("Ссылка не найдена или трек не доступен 😔");
-    }
+  if (!selectedTitle || !selectedAuthor || !selectedId) {
+    alert("Сначала выбери трек из списка");
+    return;
   }
+
+  const res = await fetch("/generate-download", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: selectedTitle,
+      author: selectedAuthor,
+      spotify_id: selectedId  // передаём ID
+    })
+  });
+
+  const result = await res.json();
+  if (result.url) {
+    alert(`✅ Ссылка на скачивание: ${result.url}`);
+    // Можно показать плеер или кнопку скачивания
+  } else {
+    alert("❌ Не удалось скачать трек");
+  }
+}
+
+
 </script>
 </body>
 </html>
