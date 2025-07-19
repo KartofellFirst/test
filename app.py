@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import os, glob
-import requests
+import requests, json
 import time
 from concurrent.futures import ThreadPoolExecutor
 
