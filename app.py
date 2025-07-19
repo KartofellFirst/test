@@ -219,20 +219,32 @@ def search_by_title():
 
     return jsonify(results)
 
-@app.route("/download-link", methods=["POST"])
-def get_download_link():
+@app.route("/generate-download", methods=["POST"])
+def generate_download():
     data = request.get_json()
     title = data.get("title")
     author = data.get("author")
+    spotify_id = data.get("spotify_id")  # пробуем использовать ID
 
-    # Пример запроса к MusicAPI
-    response = requests.get(f"http://your-musicapi.com/search?title={title}&artist={author}")
-    if response.status_code == 200:
-        result = response.json()
-        return jsonify({"url": result["download_url"]})
-    else:
-        return jsonify({"error": "not found"}), 404
-        
+    import subprocess
+    import uuid
+
+    unique_name = uuid.uuid4().hex[:8] + ".mp3"
+    output_path = f"static/din/{unique_name}"
+
+    try:
+        if spotify_id:
+            query = f"https://open.spotify.com/track/{spotify_id}"
+        else:
+            query = f"{title} {author}"
+
+        subprocess.run(["spotdl", query, "--output", output_path], check=True)
+
+        return jsonify({"url": output_path})
+    except Exception as e:
+        print(f"Ошибка загрузки через spotDL: {e}")
+        return jsonify({"error": "failed"}), 500
+
 @app.route("/import_page")
 def ipage():
     return render_template("import.html")
