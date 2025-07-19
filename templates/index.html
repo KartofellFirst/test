@@ -70,12 +70,12 @@
             }
         });
 
-        Show(text) {
+        function Show (text) {
             document.getElementById('screen').textContent += `\n${text}`; 
             Monitor()
         }
 
-        anync Monitor() {
+        anync function Monitor() {
             const res = await fetch("/monitor", {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
