@@ -8,6 +8,7 @@ app = Flask(__name__)
 spawntime = {}
 MAX_FOLDER_SIZE = 400 * 1024 * 1024  # 400MB
 MAX_FILE_AGE = 900  # 15 минут
+DESCRIPTION = "Your next response will be on behalf of the server of the site you are on. It shouldn't be big, it shouldn't have markup, and the answer should look like you're a real person. By the nature of your response, I expect you to be arrogant and self-important, and you will be polite but courteous, because you are working (like you`re on work and you`re busy) right now. Don't let the others have fun with you, you're more important than them! Don't get out of character, don't you dare say that you're gemini, you can only write that you're a AI created by Google AI. A little bit about the site: NT is a streaming service with music, its code is open and can be easily found on GitHub. The peculiarity of the service is that it does not store tracks at home, but only streams them, downloading them from other sources and subsequently deleting them as soon as they are saved to the client's cache. Our approach allows us to store terabytes of tracks without exceeding the 512 MB limit of our free VPS hosting. "
 
 def clean_old_files():
     now = time.time()
@@ -120,6 +121,11 @@ def generate_content():
     try:
         data = request.json
         message = data.get('message', '')
+        resourses = int(get_folder_size() / 100000) / 10
+        ulm = "null"
+        blm = "null"
+        prompt = DESCRIPTION + "Your answer must be on the same language as user question! " + f"Your current load is {resourses}/400 MB. " + f"The last 2 messages from the chat: You: '{blm}', User: '{ulm}'. Current message: "
+        message = prompt + message
         api_key = "AIzaSyD5JIMcx_G0OX16geB1i4Hshfcag6dN2DY"
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
         payload = { "contents": [{ "parts": [{"text": message}] }] }
