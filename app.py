@@ -3,6 +3,9 @@ import os, glob
 import requests, json
 import time
 from concurrent.futures import ThreadPoolExecutor
+import csv
+import librosa
+import numpy as np
 
 app = Flask(__name__)
 spawntime = {}
@@ -62,7 +65,60 @@ def get_folder_size(path="static/din"):
             fp = os.path.join(dirpath, f)
             total_size += os.path.getsize(fp)
     return total_size  # в байтах
-    
+
+def get_track_data(sought):
+    with open('tracks.csv', mode='r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row[0] == sought:
+                return row
+    print(f"[REPORT] >>>>>>>>>>>>>> not found {sought}")
+
+def get_free_index():
+    with open('tracks.csv', mode='r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        row_count = sum(1 for row in reader)
+        return row_count
+
+def write_new_row(data):
+    row_count = get_free_index()
+    data = [row_count, ...data]
+    with open('tracks.csv', mode='a', encoding='utf-8') as file: 
+        writer = csv.writer(file)
+        writer.writerows(data)
+        return row_count
+
+def analize(filename):
+    y, sr = librosa.load(os.path.join("static", "din", filename))
+    # 🔁 Темп
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    tempo_val = tempo[0] if isinstance(tempo, np.ndarray) else tempo
+    # 🎼 Тональность через chroma
+    chromagram = librosa.feature.chroma_stft(y=y, sr=sr)
+    chroma_mean = chromagram.mean(axis=1)
+    key_index = chroma_mean.argmax()
+    # key_notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    # key = key_notes[key_index]
+    # ⚡ Энергия через RMS
+    rms = librosa.feature.rms(y=y)
+    energy = float(np.mean(rms))
+    # 🔉 Громкость (перцептивная)
+    loudness = np.mean(librosa.feature.zero_crossing_rate(y))
+    # 🎙️ Spectral Centroid (высокочастотность)
+    centroid = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
+    # 🧠 Spectral Contrast (разница между пиками и минимумами)
+    contrast = float(np.mean(librosa.feature.spectral_contrast(y=y, sr=sr)))
+    # 🎶 Roll-off — "сдвиг в сторону высоких частот"
+    rolloff = float(np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr)))
+    # 🧠 Насколько трек сложный по частотам
+    zcr = float(np.mean(librosa.feature.zero_crossing_rate(y)))
+    # 🌀 Мел-кепстральные коэффициенты (MFCC) — основа для анализа эмоций
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+    mfcc_mean = np.mean(mfcc, axis=1)
+
+    features = [tempo_val, key_index, energy, loudness, centroid, contrast, rolloff, zcr]
+    features.extend(mfcc_mean.tolist())
+    return features
 
 with app.app_context():
     folder = os.path.join("static", "din")
@@ -89,9 +145,10 @@ def for_awake():
 @app.route("/play", methods=["POST"])
 def download():
     data = request.get_json()
-    url = "https://drive.google.com/uc?export=download&id=1g8wZM8On54kOHTI21fssDZEr-iXZfzBn"
-    filename = "1.mp3"
-    start = time.time()
+    id = data.get("id")
+    url = get_track_data(id)[2]
+    filename = get_track_data(id)[1]
+    start = time.time() 
     success = download_file(url, filename)
     end = time.time()
     print(f"⏳ Время загрузки: {end - start:.2f} секунд")
@@ -115,7 +172,28 @@ def report():
     data = request.get_json()
     text = data.get("filename")
     print(f"[REPORT] >>>>>>>>>>>>>>>> {text}")
+    return jsonify({"status": "ok"}), 200
 
+@app.route("/load", methods=["POST"])
+def load_track():
+    data = request.get_json()
+    url = data.get("url")
+    name = data.get("name")
+    author = data.get("author")
+    genres = data.get("genres")
+    if url and name and author and genres:
+        filename = f"{get_free_index()}.mp3"
+        success = download_file(url, filename)
+        if success:
+            features = analize(filename)
+            delete_file(filename)
+            index = write_new_row([url, name, author, features, genres])
+            return jsonify({"message": "track ready!", "id": index}), 200
+        else:
+            return jsonify({"message": "error on 2 stage"}), 500   
+    else:
+        return jsonify({"message": "error on 1 stage"}), 500    
+     
 @app.route('/api/generate-content', methods=['POST'])
 def generate_content():
     try:
