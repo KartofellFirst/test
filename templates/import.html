@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+	<style>
+		.dropdown-results {
+			margin-top: 10px;
+			border: 1px solid #ccc;
+			max-height: 200px;
+			overflow-y: auto;
+			padding: 5px;
+		}
+		
+		.dropdown-item {
+			padding: 8px;
+			cursor: pointer;
+			border-bottom: 1px solid #eee;
+		}
+		
+		.dropdown-item:hover {
+			background-color: #f0f0f0;
+		}
+	</style>
+</head>
+<body>
+    <!-- import.html -->
+	<div class="modal-content">
+		<h2>Импорт трека</h2>
+		
+		<!-- 🔊 Форма Spotify -->
+		<form id="spotify-form" onsubmit="event.preventDefault(); searchSpotify();">
+			<h3>🔍 Найти трек через Spotify</h3>
+			
+			<!-- Поиск по названию -->
+			<label for="spotify-title">Название трека</label>
+			<input type="text" id="spotify-title" name="spotify-title" autocomplete="off" placeholder="Введите название...">
+			
+			<!-- Dropdown с результатами -->
+			<div id="spotify-dropdown" class="dropdown-results"></div>
+			
+			<!-- Ввод URL -->
+			<label for="spotify-url">Spotify URL (если есть)</label>
+			<input type="text" id="spotify-url" name="spotify-url" placeholder="https://open.spotify.com/track/...">
+			<button type="button" onclick="fetchSpotifyData()">🔎 Искать автоматически</button>
+		</form>
+		
+		<!-- 🔗 Вторая форма будет добавлена позже -->
+		<!-- <form id="external-form">...</form> -->
+	</div>
+	
+	<script>
+	// 👁️ Поиск по названию (обновляем dropdown)
+	async function searchSpotify() {
+	const query = document.getElementById("spotify-title").value;
+	const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
+	const data = await res.json();
+	
+	const dropdown = document.getElementById("spotify-dropdown");
+	dropdown.innerHTML = "";
+	data.forEach(track => {
+	  const el = document.createElement("div");
+	  el.className = "dropdown-item";
+	  el.innerHTML = `
+		<strong>${track.title}</strong> — ${track.author}
+		<br><small>Жанры: ${track.genres}</small>
+	  `;
+	  el.onclick = () => selectTrack(track);
+	  dropdown.appendChild(el);
+	});
+	}
+	
+	// 🎯 Автоматический парсинг по URL
+	async function fetchSpotifyData() {
+	const url = document.getElementById("spotify-url").value;
+	// Тут вызов к /analyze-by-url или /extract-data?url=... (нужно реализовать)
+	alert("Автопоиск по URL: пока фейковый");
+	}
+	
+	function selectTrack(track) {
+	console.log("Выбран трек:", track);
+	// Можешь добавить автозаполнение, сохранение, модерацию и прочее
+	}
+	</script>
+</body>
+</html>
