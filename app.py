@@ -193,7 +193,29 @@ def load_track():
             return jsonify({"message": "error on 2 stage"}), 500   
     else:
         return jsonify({"message": "error on 1 stage"}), 500    
-     
+
+@app.route("/search/author", methods=["GET"])
+def search_by_author():
+    query = request.args.get("q", "").lower()
+    results = []
+    with open("tracks.csv", mode="r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if query in row[3].lower():  # 3 — это поле автора
+                results.append({"id": row[0], "title": row[2], "author": row[3]})
+    return jsonify(results)
+
+@app.route("/search/title", methods=["GET"])
+def search_by_title():
+    query = request.args.get("q", "").lower()
+    results = []
+    with open("tracks.csv", mode="r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if query in row[2].lower():  # 2 — это поле названия
+                results.append({"id": row[0], "title": row[2], "author": row[3]})
+    return jsonify(results)
+
 @app.route('/api/generate-content', methods=['POST'])
 def generate_content():
     try:
