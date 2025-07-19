@@ -57,6 +57,9 @@
     <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
 
     <script>
+        let ULM = "null";
+        let BLM = "null";
+        
         Show("Hello!")
         document.getElementById("spawn").addEventListener("click", async () => {
             Show("Downloading your file...")
@@ -128,16 +131,18 @@
 
         async function Send(message) {
             document.getElementById("screen").textContent += `$You>>> ${message}\n`
+            ULM = message;
             const response = await fetch('/api/generate-content', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message })
+                body: JSON.stringify({ message: message, ulm: ULM, blm: BLM })
             });
     
             if (response.ok) {
                 const data = await response.json();
+                BLM = data.text;
                 Show(data.text.replace("\n", ""));
             }
         }
