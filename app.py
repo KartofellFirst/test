@@ -224,26 +224,16 @@ def generate_download():
     data = request.get_json()
     title = data.get("title")
     author = data.get("author")
-    spotify_id = data.get("spotify_id")  # пробуем использовать ID
 
-    import subprocess
-    import uuid
+    res = requests.get("https://api.jamendo.com/v3.0/tracks", params={
+        "client_id": "YOUR_JAMENDO_CLIENT_ID",
+        "format": "json",
+        "limit": 1,
+        "namesearch": f"{title} {author}"
+    })
 
-    unique_name = uuid.uuid4().hex[:8] + ".mp3"
-    output_path = f"static/din/{unique_name}"
-
-    try:
-        if spotify_id:
-            query = f"https://open.spotify.com/track/{spotify_id}"
-        else:
-            query = f"{title} {author}"
-
-        subprocess.run(["spotdl", query, "--output", output_path], check=True)
-
-        return jsonify({"url": output_path})
-    except Exception as e:
-        print(f"Ошибка загрузки через spotDL: {e}")
-        return jsonify({"error": "failed"}), 500
+    track = res.json()["results"][0]
+    return jsonify({"url": track["audio"]})
 
 @app.route("/import_page")
 def ipage():
