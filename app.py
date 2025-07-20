@@ -98,13 +98,16 @@ def find_with_parser(query):
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
+    print("first stage")
 
     res = requests.get(search_url, headers=headers)
+    print("second stage")
     soup = BeautifulSoup(res.text, "html.parser")
 
     main = soup.find("main")
     if not main:
         return None
+    print("third stage")
 
     div = main.find("div", class_="container")
     if not div:
@@ -273,6 +276,7 @@ def find_download_link():
 
     print(">>>>>>>>>>>>>>>>>>>> " + query)
     result = find_with_parser(query)
+    print(result)
     return jsonify({"url": result })
     
 @app.route("/import_page")
