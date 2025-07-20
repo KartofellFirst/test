@@ -104,7 +104,9 @@ def find_with_parser(query):
 
     res = requests.get(search_url, headers=headers)
     print("second stage")
-    print(res.text[:1000]) 
+    print("Status Code:", res.status_code)
+    print("Content Type:", res.headers.get("Content-Type"))
+    print("Body Preview:", res.text[:1000])
     soup = BeautifulSoup(res.text, "html.parser")
 
     main = soup.find("main")
