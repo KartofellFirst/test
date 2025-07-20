@@ -167,6 +167,13 @@ def load_track():
     else:
         return jsonify({"message": "error on 1 stage"}), 500    
 
+@app.route("/tracks_info", methods=["GET"])
+def throw_csv_data():
+    with open('tracks.csv', mode='r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        return reader
+    return "Error happened while opening file", 500
+
 @app.route("/search/author", methods=["GET"])
 def search_by_author():
     query = request.args.get("q", "").lower()
