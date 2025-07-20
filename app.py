@@ -221,6 +221,19 @@ def search_by_title():
 def ipage():
     return render_template("import.html")
 
+@app.route("/url-check", methods=["POST"])
+def url_check():
+    data = request.get_json()
+    url = data.get("url")
+
+    if url:
+        free_filename = f"{get_free_index()}.mp3"
+        success = download_file(url, free_filename)
+        if success:
+            return jsonify({"success": success, "filename": free_filename})
+        return jsonify({"message": "Url not usable"}), 500
+    return jsonify({"message": "Url not received"}), 500
+
 @app.route("/html-preview")
 def html_preview():
     url = request.args.get("site")
