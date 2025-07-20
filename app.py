@@ -6,6 +6,8 @@ import csv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id="fd90af2b1c1447669656004c905a12c4",
