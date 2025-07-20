@@ -154,6 +154,7 @@ def load_track():
     name = data.get("name")
     author = data.get("author")
     genres = data.get("genres")
+    species = data.get("species")
     if url and name and author and genres:
         filename = f"{get_free_index()}.mp3"
         success = download_file(url, filename)
@@ -167,23 +168,15 @@ def load_track():
     else:
         return jsonify({"message": "error on 1 stage"}), 500    
 
-@app.route("/tracks_info", methods=["GET"])
+@app.route("/tracks-info", methods=["GET"])
 def throw_csv_data():
-    with open('tracks.csv', mode='r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        return reader
-    return "Error happened while opening file", 500
-
-@app.route("/search/author", methods=["GET"])
-def search_by_author():
-    query = request.args.get("q", "").lower()
-    results = []
-    with open("tracks.csv", mode="r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if query in row[3].lower():  # 3 — это поле автора
-                results.append({"id": row[0], "title": row[2], "author": row[3]})
-    return jsonify(results)
+    try:
+        with open("tracks.csv", mode="r", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            rows = list(reader)  # читаем все строки
+        return jsonify(rows), 200
+    except Exception as e:
+        return f"Error happened while opening file: {str(e)}", 500
 
 @app.route("/search/title", methods=["GET"])
 def search_by_title():
