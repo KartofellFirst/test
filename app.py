@@ -334,7 +334,7 @@ def html_preview():
 
     except Exception as e:
         print("🔥 Ошибка браузера:", str(e))
-        return jsonify({"error": "Ошибка запроса через браузер"}), 500
+        return jsonify({"error": "Ошибка запроса через браузер" + str(e)}), 500
 
 # @app.route("/html-preview")
 # def html_preview():
