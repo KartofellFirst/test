@@ -50,7 +50,7 @@
     </style>
 </head>
 <body>
-    <button id="spawn">🎵 Заспавнить аудио</button>
+    <button id="spawn">🎵 Заспавнить аудио</button><inpit id="songID">
     <div id="player"></div>
     <span id="monitor"></span>
     <br><hr>
@@ -59,7 +59,6 @@
 
 
     <script>
-	const genres = ["Phonk", "Pop", "Rock", "Rap / Hip-Hop", "Jazz", "Blues", "Classical", "Electronic / EDM", "Metal", "Country", "Reggae", "Folk", "R&B / Soul", "Punk", "Trance", "Techno", "House", "Dubstep", "Drum & Bass", "Indie", "Lo-fi", "Ambient", "Latin", "K-Pop", "J-Pop", "Soundtrack / OST", "Experimental", "Chillout", "Funk", "Gospel", "World / Ethnic", "Instrumental"]
         let ULM = "null";
         let BLM = "null";
         
@@ -69,7 +68,7 @@
             const res = await fetch("/play", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({})
+                body: JSON.stringify({ id: document.querySelector("#songID").value || 0 })
             });
             const data = await res.json();
 
@@ -114,12 +113,10 @@
                 })
 
                 document.getElementById("player").appendChild(audio);
-                Show("Player spawned!")
             } else {
                 await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
                 Show("Error occured, we sent a report in technical support. Please, reload the page")
             }
-            setTimeout(Monitor, 1000)
         });
 
         async function Monitor() {
