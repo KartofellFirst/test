@@ -313,11 +313,17 @@ def html_preview():
 
     try:
         # Настраиваем headless-браузер
+        import uuid
+        
         options = Options()
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
+        
+        # Уникальный профиль при каждом запуске
+        user_data_dir = f"/tmp/selenium-profile-{uuid.uuid4()}"
+        options.add_argument(f"--user-data-dir={user_data_dir}")
 
         driver = webdriver.Chrome(options=options)
         driver.get(url)
