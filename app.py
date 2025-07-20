@@ -75,9 +75,12 @@ def get_track_data(sought):
     with open('tracks.csv', mode='r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for row in reader:
-            if row[0] == sought:
-                return row
-    print(f"[REPORT] >>>>>>>>>>>>>> not found {sought}")
+            # Удаляем пробелы и кавычки у каждого элемента
+            cleaned = [cell.strip().strip('"').strip("'") for cell in row]
+            if cleaned[0] == sought:
+                return cleaned
+        print(f"[REPORT] >>>>>>>>>>>>>> not found {sought}")
+        return None
 
 def get_free_index():
     with open('tracks.csv', mode='r', encoding='utf-8') as file:
