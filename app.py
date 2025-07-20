@@ -288,6 +288,33 @@ def find_download_link():
 def ipage():
     return render_template("import.html")
 
+@app.route("/html-preview")
+def html_preview():
+    url = request.args.get("site")
+
+    if not url or not url.startswith("http"):
+        return jsonify({"error": "❌ Неверный URL"}), 400
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/115 Safari/537.36"
+        }
+        res = requests.get(url, headers=headers, timeout=10)
+        html_snippet = res.text[:1000]  # первые 1000 символов
+
+        return jsonify({
+            "status_code": res.status_code,
+            "content_type": res.headers.get("Content-Type"),
+            "html": html_snippet
+        })
+
+    except Exception as e:
+        print("🔥 Ошибка запроса:", str(e))
+        return jsonify({"error": "Ошибка запроса"}), 500
+
+
 @app.route("/usage", methods=["GET"])
 def total_project_usage():
     path = "."
