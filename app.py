@@ -156,8 +156,8 @@ def for_awake():
 def download():
     data = request.get_json()
     id = data.get("id")
-    url = get_track_data(id)[2]
-    filename = get_track_data(id)[1]
+    url = "https://rus.hitmotop.com/get/music/20170902/Weezer_-_Buddy_Holly_48014633.mp3"#get_track_data(id)[2]
+    filename = "1.mp3"#get_track_data(id)[1]
     start = time.time() 
     success = download_file(url, filename)
     end = time.time()
