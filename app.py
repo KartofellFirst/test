@@ -94,7 +94,7 @@ def write_new_row(data):
         return row_count
 
 def find_with_parser(query):
-    search_url = f"https://rus.hitmotop.com/search?q={query}"
+    search_url = f"https://hitmotop.me/search?q={query}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                       "AppleWebKit/537.36 (KHTML, like Gecko) "
