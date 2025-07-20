@@ -18,52 +18,143 @@
         
         #screen {
           font-family: 'Courier New', monospace;
-          background-color: #333;
+          background-color: #000;
           color: #fff;
           padding: 10px;
           white-space: pre-wrap;
           overflow-y: auto;
-          height: 300px;
+          height: 200px;
           border: 1px solid #444;
         }
 
         .screen-input {
-          border: none;
+          border: 1px solid #444;
           color: #fff;
-          background: #333;
+          background: #000;
           padding: 3px;
           font-size: 16px;
 		  border-radius: 0px;
         }
 
+        .screen-input:focus {
+            outline: #fff;
+        }
+
         .screen-wrapper {
             display: flex;
             flex-direction: column;
-            width: 96vw;
-            margin-left: 2vw;
+            width: 70vw;
             overflow: hidden;
+            min-width: 300px;
         }
         
         @keyframes blink {
           50% { opacity: 0; }
         }
     </style>
+    <style>
+        header {
+            width: 100vw;
+            background-color: #000000;
+            display: flex;
+            box-shadow: 0px 4px 8px 0px rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            margin-bottom: 15px;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 30px;
+            color: #fff;
+            text-shadow: #fff;
+            font-family: cursive;
+        }
+
+        .add {
+            border: 1px solid white;
+            text-decoration: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            font-size: 25px;
+            text-align: center;
+            display: flex;
+            justify-content: space-around;
+            padding-top: 5px;
+            border-radius: 11px;
+        }
+
+        body {
+            background-color: #000000;
+        }
+
+        #spawn {
+            border: 1px solid white;
+            background-color: #000000;
+            box-shadow: 0px 0px 8px 0px rgba(255, 255, 255, 0.2);
+            margin: 10px;
+            color: white;
+            font-size: 20px;
+            padding: 10px;
+            border-radius: 9999px;
+            display: flex;
+            justify-content: space-around;
+            width: 170px;
+            transition: color .6s ease;
+        }
+
+        main {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            margin-top: 50px;
+            gap: 15px;
+        }
+
+        #spawn:focus {
+            color: #555;
+        }
+
+        .track-info {
+            color: white;
+            font-family: monospace;
+            max-width: 230px;
+            text-align: center;
+        }
+
+        .upper {
+            color: white;
+            background: none;
+        }
+    </style>
 </head>
 <body>
-    <div style="display: flex;"><button id="spawn">🎵 Заспавнить аудио</button><input id="songID" value="0"></div>
-    <div id="player"></div>
-    <span id="monitor"></span>
-    <br><hr>
-    <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
+    <header>
+        <span class="logo">𝄢𓏢NT𓏢𝄢</span>
+        <a href="/import" class="add">+</a>
+    </header>
 
-
-
+    <main>
+        <div style="display: flex;flex-direction: column;align-items: center;">
+            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause">▶</span><span>start stream</span></button></div>
+            <div class="track-info"><span class="author">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
+        </div>
+        <div id="player"></div>
+        <span id="monitor"></span>
+        <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
+    </main>
     <script>
         let ULM = "null";
         let BLM = "null";
+        let SID = 0;
+        let NSID = 0;
+        let PLAY = false;
         
         Show("Hello, my little client. What whould you ask?")
         document.getElementById("spawn").addEventListener("click", async () => {
+            const pp = document.getElementById("play-pause");
+            if (pp.textContent == "▶") {pp.textContent = "∥"; PLAY = true;} 
+            else {pp.textContent = "▶"; PLAY = false;}
             Show("Downloading your file...")
             const res = await fetch("/play", {
                 method: "POST",
@@ -136,7 +227,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message, ulm: ULM, blm: BLM })
+                body: JSON.stringify({ message: message, ulm: ULM, blm: BLM, sid: SID, nsid: NSID, play: PLAY })
             });
     
             if (response.ok) {
