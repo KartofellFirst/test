@@ -2,10 +2,10 @@ from flask import Flask, render_template, request, jsonify
 import os, glob
 import requests, json
 import time
-from concurrent.futures import ThreadPoolExecutor
 import csv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from bs4 import BeautifulSoup
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id="fd90af2b1c1447669656004c905a12c4",
@@ -93,8 +93,53 @@ def write_new_row(data):
         writer.writerows(data)
         return row_count
 
-def analize(filename):
-    return "features"
+def find_with_parser(query):
+    search_url = f"https://rus.hitmotop.com/search?q={query}"
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    res = requests.get(search_url, headers=headers)
+    soup = BeautifulSoup(res.text, "html.parser")
+
+    main = soup.find("main")
+    if not main:
+        return None
+
+    div = main.find("div", class_="container")
+    if not div:
+        return None
+
+    muslist = div.find("div", class_="muslist")
+    if not muslist:
+        return None
+
+    content = muslist.find("div", class_="content-inner")
+    if not content:
+        return None    
+
+    results = content.find("div")
+    if not results:
+        return None
+
+    tracks = results.find("ul", class_="tracks__list")
+    if not tracks:
+        return None
+
+    track_block = tracks.find("li", class_="track")
+    if not track_block:
+        return None
+
+    track_info = track_block.find("div", class_="track__info-r")
+    if not track_info:
+        return None
+
+    download_link_tag = track_info.find("a", class_="track__download-btn")
+    if not download_link_tag:
+        return None
+
+    link = download_link_tag["href"]
+    return link
 
 with app.app_context():
     folder = os.path.join("static", "din")
@@ -219,36 +264,15 @@ def search_by_title():
 
     return jsonify(results)
 
-@app.route("/generate-download", methods=["POST"])
-def generate_download():
+@app.route("/find-download-link", methods=["POST"])
+def find_download_link():
     data = request.get_json()
     title = data.get("title")
     author = data.get("author")
     query = f"{title} {author}"
 
-    try:
-        # Запрос к Confidence OSDB
-        res = requests.get("https://osdb.confidence.sh/api/search", params={"q": query})
-        res.raise_for_status()
-        results = res.json()
-
-        if results:
-            track = results[0]  # первый результат
-            return jsonify({
-                "url": track["audio_url"],
-                "title": track["title"],
-                "artist": track["artist"],
-                "duration": track.get("duration", "unknown"),
-                "genre": track.get("genre", "unknown")
-            })
-        else:
-            print(f"❌ Confidence OSDB не вернул результатов для: {query}")
-            return jsonify({"error": "not found"}), 404
-
-    except Exception as e:
-        print(f"🔥 Ошибка при работе с OSDB: {str(e)}")
-        return jsonify({"error": "server error"}), 500
-
+    return jsonify({"url": find_with_parser(query) })
+    
 @app.route("/import_page")
 def ipage():
     return render_template("import.html")
