@@ -96,7 +96,9 @@ def write_new_row(data):
 def find_with_parser(query):
     search_url = f"https://lightaudio.ru/mp3/{query}"
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/115.0.0.0 Safari/537.36"
     }
 
     res = requests.get(search_url, headers=headers)
