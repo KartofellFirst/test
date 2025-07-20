@@ -6,8 +6,6 @@ import csv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id="fd90af2b1c1447669656004c905a12c4",
@@ -96,59 +94,38 @@ def write_new_row(data):
         return row_count
 
 def find_with_parser(query):
-    search_url = f"https://hitmotop.me/search?q={query}"
+    search_url = f"https://lightaudio.ru/mp3/{query}"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/115.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0"
     }
-    print("first stage")
 
     res = requests.get(search_url, headers=headers)
-    print("second stage")
-    print("Status Code:", res.status_code)
-    print("Content Type:", res.headers.get("Content-Type"))
-    print("Body Preview:", res.text[:1000])
     soup = BeautifulSoup(res.text, "html.parser")
 
-    main = soup.find("main")
+    main = soup.find("div", id="main")
     if not main:
-        return None
-    print("third stage")
-
-    div = main.find("div", class_="container")
-    if not div:
+        print("❌ main не найден")
         return None
 
-    muslist = div.find("div", class_="muslist")
-    if not muslist:
-        return None
-
-    content = muslist.find("div", class_="content-inner")
-    if not content:
-        return None    
-
-    results = content.find("div")
+    results = main.find("div", id="result")
     if not results:
+        print("❌ result не найден")
         return None
 
-    tracks = results.find("ul", class_="tracks__list")
-    if not tracks:
-        return None
-
-    track_block = tracks.find("li", class_="track")
+    track_block = results.find("div", class_="item")
     if not track_block:
+        print("❌ item не найден")
         return None
 
-    track_info = track_block.find("div", class_="track__info-r")
-    if not track_info:
-        return None
-
-    download_link_tag = track_info.find("a", class_="track__download-btn")
+    download_link_tag = track_block.find("a", class_="down")
     if not download_link_tag:
+        print("❌ Ссылка на скачивание не найдена")
         return None
 
+    # Убираем первые два символа, если нужно (например, "//example.com")
     link = download_link_tag["href"]
+    if link.startswith("//"):
+        link = "https:" + link
     return link
 
 with app.app_context():
@@ -280,93 +257,39 @@ def find_download_link():
     title = data.get("title")
     author = data.get("author")
     query = f"{title} - {author}"
-
-    print(">>>>>>>>>>>>>>>>>>>> " + query)
+    
     result = find_with_parser(query)
-    print(result)
     return jsonify({"url": result })
     
 @app.route("/import_page")
 def ipage():
     return render_template("import.html")
 
-def get_html_browser(url):
-    options = Options()
-    options.add_argument("--headless")  # без окна
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-
-    driver = webdriver.Chrome(options=options)
-    driver.get(url)
-    html = driver.page_source
-    driver.quit()
-
-    # Можно парсить через BeautifulSoup
-    soup = BeautifulSoup(html, "html.parser")
-    return soup
-
 @app.route("/html-preview")
 def html_preview():
     url = request.args.get("site")
+
     if not url or not url.startswith("http"):
         return jsonify({"error": "❌ Неверный URL"}), 400
 
     try:
-        # Настраиваем headless-браузер
-        import uuid
-        
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--window-size=1920,1080")
-        
-        # Уникальный профиль при каждом запуске
-        user_data_dir = f"/tmp/selenium-profile-{uuid.uuid4()}"
-        options.add_argument(f"--user-data-dir={user_data_dir}")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/115 Safari/537.36"
+        }
+        res = requests.get(url, headers=headers, timeout=10)
+        html_snippet = res.text[:1000]  # первые 1000 символов
 
-        driver = webdriver.Chrome(options=options)
-        driver.get(url)
-
-        # Получаем HTML после полной загрузки страницы
-        html = driver.page_source
-        driver.quit()
-
-        snippet = html[:1000]  # только первые 1000 символов
         return jsonify({
-            "site": url,
-            "html": snippet
+            "status_code": res.status_code,
+            "content_type": res.headers.get("Content-Type"),
+            "html": html_snippet
         })
 
     except Exception as e:
-        print("🔥 Ошибка браузера:", str(e))
-        return jsonify({"error": "Ошибка запроса через браузер" + str(e)}), 500
-
-# @app.route("/html-preview")
-# def html_preview():
-#     url = request.args.get("site")
-
-#     if not url or not url.startswith("http"):
-#         return jsonify({"error": "❌ Неверный URL"}), 400
-
-#     try:
-#         headers = {
-#             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-#                           "AppleWebKit/537.36 (KHTML, like Gecko) "
-#                           "Chrome/115 Safari/537.36"
-#         }
-#         res = requests.get(url, headers=headers, timeout=10)
-#         html_snippet = res.text[:1000]  # первые 1000 символов
-
-#         return jsonify({
-#             "status_code": res.status_code,
-#             "content_type": res.headers.get("Content-Type"),
-#             "html": html_snippet
-#         })
-
-#     except Exception as e:
-#         print("🔥 Ошибка запроса:", str(e))
-#         return jsonify({"error": "Ошибка запроса"}), 500
+        print("🔥 Ошибка запроса:", str(e))
+        return jsonify({"error": "Ошибка запроса"}), 500
 
 
 @app.route("/usage", methods=["GET"])
