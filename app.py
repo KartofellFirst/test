@@ -272,8 +272,8 @@ def find_download_link():
     query = f"{title} - {author}"
 
     print(">>>>>>>>>>>>>>>>>>>> " + query)
-
-    return jsonify({"url": find_with_parser(query) })
+    result = find_with_parser(query)
+    return jsonify({"url": result })
     
 @app.route("/import_page")
 def ipage():
