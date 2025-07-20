@@ -43,9 +43,9 @@
 			<!-- Ввод URL -->
 			<label for="spotify-url">Spotify URL (если есть)</label>
 			<input type="text" id="spotify-url" name="spotify-url" placeholder="https://open.spotify.com/track/...">
-			<button type="button" onclick="fetchSpotifyData()">🔎 Искать автоматически</button>
+			<button type="button" onclick="urlCheck()">🔎 Проверка совместимости</button>
 		</form>
-		
+		<div id="audio-div"></div>
 		<!-- 🔗 Вторая форма будет добавлена позже -->
 		<!-- <form id="external-form">...</form> -->
 	</div>
@@ -60,95 +60,87 @@
 	// ⏳ Debounce-таймер
 	let inputTimer = null;
 	
-	document.getElementById("spotify-title").addEventListener("input", function () {
-	  const query = this.value;
-	  if (!query.trim()) return;
-	
-	  clearTimeout(inputTimer);
-	  inputTimer = setTimeout(() => {
-	    searchSpotify(query);
-	  }, 400); // 400 мс задержка — можно изменить
-	});
+    document.getElementById("spotify-title").addEventListener("input", function () {
+        const query = this.value;
+        if (!query.trim()) return;
+        
+        clearTimeout(inputTimer);
+        inputTimer = setTimeout(() => {
+            searchSpotify(query);
+        }, 600); // 600 мс задержка — можно изменить
+    });
 	
 	async function searchSpotify(query) {
-	  try {
-	    const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
-	    const data = await res.json();
-	    const dropdown = document.getElementById("spotify-dropdown");
-	    dropdown.innerHTML = "";
-	
-	    data.slice(0, 3).forEach(track => {
-	      const el = document.createElement("div");
-	      el.className = "dropdown-item";
-	      el.innerHTML = `
-	        <strong>${track.title}</strong> — ${track.author}
-	        <br><small>Жанры: ${track.genres}</small>
-	      `;
-	      el.onclick = () => {
-	        selectedTitle = track.title;
-	        selectedAuthor = track.author;
-	        selectedId = track.id;
-	        dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
-	      };
-	      dropdown.appendChild(el);
-	    });
-	  } catch (err) {
-	    console.error("❌ Ошибка запроса:", err);
-	  }
+        try {
+            const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            const dropdown = document.getElementById("spotify-dropdown");
+            dropdown.innerHTML = "";
+            
+            data.slice(0, 3).forEach(track => {
+              const el = document.createElement("div");
+              el.className = "dropdown-item";
+              el.innerHTML = `
+                <strong>${track.title}</strong> — ${track.author}
+                <br><small>Жанры: ${track.genres}</small>
+              `;
+              el.onclick = () => {
+                selectedTitle = track.title;
+                selectedAuthor = track.author;
+                selectedId = track.id;
+                dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
+              };
+              dropdown.appendChild(el);
+            });
+        } catch (err) {
+            console.error("❌ Ошибка запроса:", err);
+        }
 	}
- //  document.getElementById("spotify-title").addEventListener("input", async function () {
- //    const query = this.value;
- //    if (!query.trim()) return;
 
- //    const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
- //    const data = await res.json();
- //    const dropdown = document.getElementById("spotify-dropdown");
- //    dropdown.innerHTML = "";
+    async function urlCheck() {
+        let url = document.getElementById("spotify-url").value;
+        url = convertDriveUrl(url);
+        document.getElementById("spotify-url").value = url;
+        const res = await fetch("/url-check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: url })
+        })
+        const data = await res.json();
+        if (data.success) {
+            const audio = document.createElement("audio");
+            audio.src = data.filename;
+            audio.controls = true;
+            audio.autoplay = true;
+            document.querySelector("#audio-div").innerHTML = "";
+            document.querySelector("#audio-div").appendChild(audio);
 
- //    data.slice(0, 3).forEach(track => {
- //      const el = document.createElement("div");
- //      el.className = "dropdown-item";
- //      el.innerHTML = `
- //        <strong>${track.title}</strong> — ${track.author}
- //        <br><small>Жанры: ${track.genres}</small>
- //      `;
- //      el.onclick = () => {
- //        selectedTitle = track.title;
- //        selectedAuthor = track.author;
-	// selectedId = track.id;
- //        dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
- //      };
- //      dropdown.appendChild(el);
- //    });
- //  });
+            audio.addEventListener("canplaythrough", async () => {
+                await fetch("/delete", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename: data.filename })
+                });
+            }, { once: true });
+        }
+    }
 
-  // 🎯 Автопоиск ссылки по имени + автору
-  async function fetchSpotifyData() {
-  if (!selectedTitle || !selectedAuthor || !selectedId) {
-    alert("Сначала выбери трек из списка");
-    return;
-  }
-
-  const res = await fetch("/find-download-link", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: selectedTitle,
-      author: selectedAuthor,
-      spotify_id: selectedId  // передаём ID
-    })
-  });
-
-  const result = await res.json();
-  if (result.url) {
-    alert(`✅ Ссылка на скачивание: ${result.url}`);
-    // Можно показать плеер или кнопку скачивания
-  } else {
-    alert("❌ Не удалось скачать трек");
-  }
-}
-
-
+    function convertDriveUrl(originalUrl) {
+      // Если это уже нужный формат
+      if (originalUrl.includes("uc?export=download&id=")) {
+        return originalUrl;
+      }
+    
+      // Если формат типа /file/d/ID/view
+      const match = originalUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        const fileId = match[1];
+        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+      }
+    
+      // Если не распознано
+      return null;
+    }
 </script>
 </body>
 </html>
