@@ -269,7 +269,9 @@ def find_download_link():
     data = request.get_json()
     title = data.get("title")
     author = data.get("author")
-    query = f"{title} {author}"
+    query = f"{title} - {author}"
+
+    print(">>>>>>>>>>>>>>>>>>>> " + query)
 
     return jsonify({"url": find_with_parser(query) })
     
