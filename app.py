@@ -96,12 +96,15 @@ def write_new_row(data):
 def find_with_parser(query):
     search_url = f"https://rus.hitmotop.com/search?q={query}"
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/115.0.0.0 Safari/537.36"
     }
     print("first stage")
 
     res = requests.get(search_url, headers=headers)
     print("second stage")
+    print(res.text[:1000]) 
     soup = BeautifulSoup(res.text, "html.parser")
 
     main = soup.find("main")
