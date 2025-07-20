@@ -288,31 +288,77 @@ def find_download_link():
 def ipage():
     return render_template("import.html")
 
+def get_html_browser(url):
+    options = Options()
+    options.add_argument("--headless")  # без окна
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+
+    driver = webdriver.Chrome(options=options)
+    driver.get(url)
+    html = driver.page_source
+    driver.quit()
+
+    # Можно парсить через BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    return soup
+
 @app.route("/html-preview")
 def html_preview():
     url = request.args.get("site")
-
     if not url or not url.startswith("http"):
         return jsonify({"error": "❌ Неверный URL"}), 400
 
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                          "AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/115 Safari/537.36"
-        }
-        res = requests.get(url, headers=headers, timeout=10)
-        html_snippet = res.text[:1000]  # первые 1000 символов
+        # Настраиваем headless-браузер
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--window-size=1920,1080")
 
+        driver = webdriver.Chrome(options=options)
+        driver.get(url)
+
+        # Получаем HTML после полной загрузки страницы
+        html = driver.page_source
+        driver.quit()
+
+        snippet = html[:1000]  # только первые 1000 символов
         return jsonify({
-            "status_code": res.status_code,
-            "content_type": res.headers.get("Content-Type"),
-            "html": html_snippet
+            "site": url,
+            "html": snippet
         })
 
     except Exception as e:
-        print("🔥 Ошибка запроса:", str(e))
-        return jsonify({"error": "Ошибка запроса"}), 500
+        print("🔥 Ошибка браузера:", str(e))
+        return jsonify({"error": "Ошибка запроса через браузер"}), 500
+
+# @app.route("/html-preview")
+# def html_preview():
+#     url = request.args.get("site")
+
+#     if not url or not url.startswith("http"):
+#         return jsonify({"error": "❌ Неверный URL"}), 400
+
+#     try:
+#         headers = {
+#             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+#                           "AppleWebKit/537.36 (KHTML, like Gecko) "
+#                           "Chrome/115 Safari/537.36"
+#         }
+#         res = requests.get(url, headers=headers, timeout=10)
+#         html_snippet = res.text[:1000]  # первые 1000 символов
+
+#         return jsonify({
+#             "status_code": res.status_code,
+#             "content_type": res.headers.get("Content-Type"),
+#             "html": html_snippet
+#         })
+
+#     except Exception as e:
+#         print("🔥 Ошибка запроса:", str(e))
+#         return jsonify({"error": "Ошибка запроса"}), 500
 
 
 @app.route("/usage", methods=["GET"])
