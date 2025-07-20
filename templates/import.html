@@ -109,7 +109,7 @@
         const data = await res.json();
         if (data.success) {
             const audio = document.createElement("audio");
-            audio.src = data.filename;
+            audio.src = `/static/din/${data.filename}`;
             audio.controls = true;
             audio.autoplay = true;
             document.querySelector("#audio-div").innerHTML = "";
