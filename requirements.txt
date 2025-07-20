@@ -3,5 +3,4 @@ aiohttp
 requests
 gunicorn
 spotipy
-spotdl
-ffmpeg
+bs4
