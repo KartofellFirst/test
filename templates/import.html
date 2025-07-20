@@ -51,36 +51,76 @@
 	</div>
 	
 	<script>
-  let selectedTitle = null;
-  let selectedAuthor = null;
-  let selectedId = null;
+	let selectedTitle = null;
+	let selectedAuthor = null;
+	let selectedId = null;
 
   // 🔍 Автопоиск при вводе
-  document.getElementById("spotify-title").addEventListener("input", async function () {
-    const query = this.value;
-    if (!query.trim()) return;
+	
+	// ⏳ Debounce-таймер
+	let inputTimer = null;
+	
+	document.getElementById("spotify-title").addEventListener("input", function () {
+	  const query = this.value;
+	  if (!query.trim()) return;
+	
+	  clearTimeout(inputTimer);
+	  inputTimer = setTimeout(() => {
+	    searchSpotify(query);
+	  }, 400); // 400 мс задержка — можно изменить
+	});
+	
+	async function searchSpotify(query) {
+	  try {
+	    const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
+	    const data = await res.json();
+	    const dropdown = document.getElementById("spotify-dropdown");
+	    dropdown.innerHTML = "";
+	
+	    data.slice(0, 3).forEach(track => {
+	      const el = document.createElement("div");
+	      el.className = "dropdown-item";
+	      el.innerHTML = `
+	        <strong>${track.title}</strong> — ${track.author}
+	        <br><small>Жанры: ${track.genres}</small>
+	      `;
+	      el.onclick = () => {
+	        selectedTitle = track.title;
+	        selectedAuthor = track.author;
+	        selectedId = track.id;
+	        dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
+	      };
+	      dropdown.appendChild(el);
+	    });
+	  } catch (err) {
+	    console.error("❌ Ошибка запроса:", err);
+	  }
+	}
+ //  document.getElementById("spotify-title").addEventListener("input", async function () {
+ //    const query = this.value;
+ //    if (!query.trim()) return;
 
-    const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    const dropdown = document.getElementById("spotify-dropdown");
-    dropdown.innerHTML = "";
+ //    const res = await fetch(`/search/title?q=${encodeURIComponent(query)}`);
+ //    const data = await res.json();
+ //    const dropdown = document.getElementById("spotify-dropdown");
+ //    dropdown.innerHTML = "";
 
-    data.slice(0, 3).forEach(track => {
-      const el = document.createElement("div");
-      el.className = "dropdown-item";
-      el.innerHTML = `
-        <strong>${track.title}</strong> — ${track.author}
-        <br><small>Жанры: ${track.genres}</small>
-      `;
-      el.onclick = () => {
-        selectedTitle = track.title;
-        selectedAuthor = track.author;
-	selectedId = track.id;
-        dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
-      };
-      dropdown.appendChild(el);
-    });
-  });
+ //    data.slice(0, 3).forEach(track => {
+ //      const el = document.createElement("div");
+ //      el.className = "dropdown-item";
+ //      el.innerHTML = `
+ //        <strong>${track.title}</strong> — ${track.author}
+ //        <br><small>Жанры: ${track.genres}</small>
+ //      `;
+ //      el.onclick = () => {
+ //        selectedTitle = track.title;
+ //        selectedAuthor = track.author;
+	// selectedId = track.id;
+ //        dropdown.innerHTML = `<div class="dropdown-selected">Вы выбрали: <strong>${selectedTitle}</strong> — ${selectedAuthor}</div>`;
+ //      };
+ //      dropdown.appendChild(el);
+ //    });
+ //  });
 
   // 🎯 Автопоиск ссылки по имени + автору
   async function fetchSpotifyData() {
@@ -89,7 +129,7 @@
     return;
   }
 
-  const res = await fetch("/generate-download", {
+  const res = await fetch("/find-download-link", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
