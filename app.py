@@ -93,43 +93,6 @@ def write_new_row(data):
         writer.writerows(data)
         return row_count
 
-def find_with_parser(query):
-    search_url = f"https://lightaudio.ru/mp3/{query}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/115.0.0.0 Safari/537.36"
-    }
-
-    res = requests.get(search_url, headers=headers)
-    soup = BeautifulSoup(res.text, "html.parser")
-
-    main = soup.find("div", id="main")
-    if not main:
-        print("❌ main не найден")
-        return None
-
-    results = main.find("div", id="result")
-    if not results:
-        print("❌ result не найден")
-        return None
-
-    track_block = results.find("div", class_="item")
-    if not track_block:
-        print("❌ item не найден")
-        return None
-
-    download_link_tag = track_block.find("a", class_="down")
-    if not download_link_tag:
-        print("❌ Ссылка на скачивание не найдена")
-        return None
-
-    # Убираем первые два символа, если нужно (например, "//example.com")
-    link = download_link_tag["href"]
-    if link.startswith("//"):
-        link = "https:" + link
-    return link
-
 with app.app_context():
     folder = os.path.join("static", "din")
     os.makedirs(folder, exist_ok=True)
@@ -156,8 +119,8 @@ def for_awake():
 def download():
     data = request.get_json()
     id = data.get("id")
-    url = "https://rus.hitmotop.com/get/music/20170902/Weezer_-_Buddy_Holly_48014633.mp3"#get_track_data(id)[2]
-    filename = "1.mp3"#get_track_data(id)[1]
+    url = get_track_data(id)[1]
+    filename = f"{get_track_data(id)[0]}.mp3"
     start = time.time() 
     success = download_file(url, filename)
     end = time.time()
@@ -252,16 +215,6 @@ def search_by_title():
             })
 
     return jsonify(results)
-
-@app.route("/find-download-link", methods=["POST"])
-def find_download_link():
-    data = request.get_json()
-    title = data.get("title")
-    author = data.get("author")
-    query = f"{title} - {author}"
-    
-    result = find_with_parser(query)
-    return jsonify({"url": result })
     
 @app.route("/import_page")
 def ipage():
@@ -314,7 +267,7 @@ def generate_content():
         ulm = data.get('ulm', 'null')
         blm = data.get('blm', 'null')
         resourses = int(get_folder_size() / 100000) / 10
-        prompt = DESCRIPTION + "Your answer must be on the same language as user question! " + f"Your current load is {resourses}/400 MB. " + f"The last 2 messages from the chat: You: '{blm}', User: '{ulm}'. Current message: "
+        prompt = DESCRIPTION + "Your answer must be on the same language as user question! " + f"Your current load is {resourses}/400 MB. " + f"The last 3 messages from the chat: User: '{ulm}', You: '{blm}', User: "
         message = prompt + message
         api_key = "AIzaSyD5JIMcx_G0OX16geB1i4Hshfcag6dN2DY"
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
