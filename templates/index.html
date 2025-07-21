@@ -192,8 +192,8 @@
         SBTN.addEventListener("click", () => {
 			if (ctx.state === "suspended") await ctx.resume();
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (!PLAY) { PLAY = true; pp.style.bottom = "0px" pp.textContent = "⏸"; SBTN.style.width = "120px"; label.textContent = "pause"; await play(); } 
-			else { PLAY = false; pause(); pp.textContent = "▶"; SBTN.style.width = "170px"; pp.style.bottom = "2px" setTimeout(() => { label.textContent = "start stream"; }, 150); } });
+            if (!PLAY) { PLAY = true; pp.style.bottom = "2px"; pp.textContent = "⏸"; SBTN.style.width = "120px"; label.textContent = "pause"; await play(); } 
+			else { PLAY = false; pause(); pp.textContent = "▶"; SBTN.style.width = "170px"; pp.style.bottom = "0px"; setTimeout(() => { label.textContent = "start stream"; }, 150); } });
         });
 
         async function play() {
