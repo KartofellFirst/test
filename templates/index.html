@@ -97,11 +97,12 @@
             margin: 10px;
             color: white;
             font-size: 20px;
+			font-weight: bold;
             padding: 10px;
             border-radius: 9999px;
             display: flex;
             justify-content: space-around;
-            width: 170px;
+            width: 180px;
             transition: color .6s ease;
 	        transition: width 0.2s ease, padding 0.2s ease;
         }
@@ -164,10 +165,10 @@
 
     <main>
         <div style="display: flex;flex-direction: column;align-items: center;">
-            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause" style="position: relative;">▶</span><span id="pp-label">start stream</span></button></div>
+            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause" style="position: relative;font-family: 'Font Awesome 5 Free', sans-serif;">▶</span><span id="pp-label">start stream</span></button></div>
             <div class="track-info"><span class="author">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
         </div>
-        <div id="player"></div>
+        <div id="player"><audio id="audio" controls autoplay></div>
         <span id="monitor"></span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
@@ -178,110 +179,92 @@
         let NSID = 0;
         let PSID = 0;
         let PLAY = false;
+		let CACHED = false;
 
-        let ctx = new (window.AudioContext || window.webkitAudioContext)();
-        let buffer = null;
-        let source = null;
-        let startTime = 0;
-        let offset = 0;
-        let isPlaying = false;
-
+		const ctx = new (window.AudioContext || window.webkitAudioContext)();
+		const sourceNode = ctx.createMediaElementSource(audio);
+		const analyser = ctx.createAnalyser();
+		analyser.fftSize = 256;
+		const dataArray = new Uint8Array(analyser.frequencyBinCount);
+		sourceNode.connect(analyser);
+		analyser.connect(ctx.destination);
+		let lastEnergy = 0;
+		let spikeCooldown = 0;
+		
         Show("Hello, my little client. What whould you ask?")
 
-        const SBTN = document.getElementById("spawn")
+        const SBTN = document.getElementById("spawn");
+		const audio = document.getElementById("audio");
         SBTN.addEventListener("click", async () => {
-			if (ctx.state === "suspended") await ctx.resume();
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (!PLAY) { PLAY = true; pp.style.bottom = "2px"; pp.textContent = "⏸"; SBTN.style.width = "120px"; label.textContent = "pause"; await play(); } 
-			else { PLAY = false; pause(); pp.textContent = "▶"; SBTN.style.width = "170px"; pp.style.bottom = "0px"; setTimeout(() => { label.textContent = "start stream"; }, 150); } 
+            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; SBTN.style.width = "130px"; label.textContent = "pause"; await play(); } 
+			else { PLAY = false; pause(); pp.textContent = "▶"; SBTN.style.width = "180px"; pp.style.bottom = "0px"; setTimeout(() => { label.textContent = "start stream"; }, 150); } 
         });
 
-        async function play() {
-          Show("Downloading your file...");
-          const res = await fetch("/play", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: SID })
-          });
-          const data = await res.json();
-        
-          if (data.success) {
-            Show("File loaded, decoding audio...");
-            const response = await fetch(data.filename);
-            const audioData = await response.arrayBuffer();
-            buffer = await ctx.decodeAudioData(audioData);
-        
-            Show("Cached in memory, deleting from server...");
-            await fetch("/delete", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ filename: data.filename })
-            });
-        
-            playFrom(offset); // запуск с текущего прогресса
-          } else {
-            await fetch("/report", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(`error while downloading ${data.filename}`)
-            });
-            Show("Error occurred. Reload the page.");
-          }
-        }
         
         function pause() {
-          if (source) source.stop();
-          offset = ctx.currentTime - startTime;
-          isPlaying = false;
-          source = null;
+          audio.pause();
         }
 
 
-        function playFrom(position = 0) {
-          source = ctx.createBufferSource();
-          source.buffer = buffer;
-          source.connect(ctx.destination);
-          source.start(0, position);
-          startTime = ctx.currentTime - position;
-          isPlaying = true;
+        function play() {
+			CACHED? audio.play() : Play()
+		}
+		
+        async function Play() {
+			CACHED = false;
+            Show("Downloading your file...")
+            const res = await fetch("/play", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: SID })
+            });
+            const data = await res.json();
 
+            if (data.success) {
+                Show("Media loaded, creating audio tag...")
+                audio.src = data.filename;
 
-          source.onended = () => {
-            isPlaying = false;
-          };
+				function monitorEnergy() {
+				  analyser.getByteFrequencyData(dataArray);
+				  const energy = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+				
+				  const diff = energy - lastEnergy;
+				
+				  if (diff > 20 && spikeCooldown <= 0) {
+				    bold();
+				    spikeCooldown = 20; // ~20 кадров паузы после всплеска
+				  } else if (energy > 90 && spikeCooldown <= 0) {
+				    thick();
+				    spikeCooldown = 20;
+				  }
+				
+				  lastEnergy = energy;
+				  spikeCooldown = Math.max(spikeCooldown - 1, 0);
+				  requestAnimationFrame(monitorEnergy);
+				}
+				
+				audio.addEventListener("play", async () => {
+			      await ctx.resume(); // важный момент для iOS
+			      monitorEnergy();    // запуск анализа
+			    });
+
+                audio.addEventListener("canplaythrough", async () => {
+					CACHED = true;
+                    await fetch("/delete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ filename: data.filename })
+                    });
+                    Show("Saved to cache, removing file from server...")
+                }, { once: true });
+
+                audio.play()
+            } else {
+                await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
+                Show("Error occured, we sent a report in technical support. Please, reload the page")
+            }
         }
-        
-        // async function play() {
-        //     Show("Downloading your file...")
-        //     const res = await fetch("/play", {
-        //         method: "POST",
-        //         headers: { "Content-Type": "application/json" },
-        //         body: JSON.stringify({ id: SID })
-        //     });
-        //     const data = await res.json();
-
-        //     if (data.success) {
-        //         Show("Media loaded, creating audio tag...")
-        //         const audio = document.createElement("audio");
-        //         audio.src = data.filename;
-        //         audio.controls = true;
-        //         audio.autoplay = true;
-
-        //         audio.addEventListener("canplaythrough", async () => {
-        //             await fetch("/delete", {
-        //                 method: "POST",
-        //                 headers: { "Content-Type": "application/json" },
-        //                 body: JSON.stringify({ filename: data.filename })
-        //             });
-        //             Show("Saved to cache, removing file from server...")
-        //         }, { once: true });
-
-        //         document.getElementById("player").appendChild(audio);
-        //     } else {
-        //         await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
-        //         Show("Error occured, we sent a report in technical support. Please, reload the page")
-        //     }
-        // }
 
         async function Monitor() {
             const res = await fetch("/monitor", {
