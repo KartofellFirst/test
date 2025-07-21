@@ -187,12 +187,10 @@
 		const audio = document.getElementById("audio");
 
 		const ctx = new (window.AudioContext || window.webkitAudioContext)();
-		const sourceNode = ctx.createMediaElementSource(audio);
-		const analyser = ctx.createAnalyser();
+		let sourceNode = null;
+		const analyser = null;
 		analyser.fftSize = 256;
-		const dataArray = new Uint8Array(analyser.frequencyBinCount);
-		sourceNode.connect(analyser);
-		analyser.connect(ctx.destination);
+		const dataArray = null;
 		let lastEnergy = 0;
 		let spikeCooldown = 0;
 		
@@ -225,6 +223,11 @@
             if (data.success) {
                 Show("Media loaded, creating audio tag...")
                 audio.src = data.filename;
+				sourceNode = ctx.createMediaElementSource(audio);
+				analyser = ctx.createAnalyser()
+				dataArray = new Uint8Array(analyser.frequencyBinCount)	
+				sourceNode.connect(analyser);
+				analyser.connect(ctx.destination);
 
 				function monitorEnergy() {
 				  analyser.getByteFrequencyData(dataArray);
@@ -234,10 +237,10 @@
 				
 				  if (diff > 20 && spikeCooldown <= 0) {
 				    thick();
-				    spikeCooldown = 30; // ~20 кадров паузы после всплеска
+				    spikeCooldown = 20; // ~20 кадров паузы после всплеска
 				  } else if (energy > 90 && spikeCooldown <= 0) {
 				    bold();
-				    spikeCooldown = 30;
+				    spikeCooldown = 20;
 				  }
 				
 				  lastEnergy = energy;
