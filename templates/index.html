@@ -184,7 +184,6 @@
         Show("Hello, my little client. What whould you ask?")
 
         const SBTN = document.getElementById("spawn");
-		const audio = document.getElementById("audio");
 
 		const ctx = new (window.AudioContext || window.webkitAudioContext)();
 		let sourceNode = null;
@@ -195,18 +194,18 @@
 		
         SBTN.addEventListener("click", async () => {
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; SBTN.style.width = "130px"; label.textContent = "pause"; await play(); } 
+            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; SBTN.style.width = "130px"; label.textContent = "pause"; play(); } 
 			else { PLAY = false; pause(); pp.textContent = "▶"; SBTN.style.width = "180px"; pp.style.bottom = "0px"; setTimeout(() => { label.textContent = "start stream"; }, 150); } 
         });
 
         
         function pause() {
-          audio.pause();
+          document.getElementById("audio").pause();
         }
 
 
         function play() {
-			CACHED? audio.play() : Play()
+			CACHED? document.getElementById("audio").play() : Play()
 		}
 		
         async function Play() {
@@ -221,7 +220,12 @@
 
             if (data.success) {
                 Show("Media loaded, creating audio tag...")
-                audio.src = data.filename;
+                const audio = new Audio();
+				audio.src = data.filename;
+				audio.controls = true;
+				audio.autoplay = true;
+				audio.id = "audio";
+				audio.volume = 1;
 				sourceNode = ctx.createMediaElementSource(audio);
 				analyser = ctx.createAnalyser()
 				analyser.fftSize = 256;
