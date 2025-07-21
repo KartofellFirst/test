@@ -164,7 +164,7 @@
 
     <main>
         <div style="display: flex;flex-direction: column;align-items: center;">
-            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause">▶</span><span id="pp-label">start stream</span></button></div>
+            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause" style="position: relative;">▶</span><span id="pp-label">start stream</span></button></div>
             <div class="track-info"><span class="author">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
         </div>
         <div id="player"></div>
@@ -191,8 +191,8 @@
         const SBTN = document.getElementById("spawn")
         SBTN.addEventListener("click", () => {
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (pp.textContent == "▶") {pp.textContent = "\U+25AE\U+25AE"; SBTN.style.width = "120px"; PLAY = true; label.textContent = "pause"; play();} 
-            else {pp.textContent = "▶"; PLAY = false; SBTN.style.width = "170px"; setTimeout(() => {label.textContent = "start stream"}, 300); pause()}
+            if (pp.textContent == "▶") {pp.textContent = "\U+25AE\U+25AE"; SBTN.style.width = "120px"; pp.style.bottom = "2px"; PLAY = true; label.textContent = "pause"; play();} 
+            else {pp.textContent = "▶"; PLAY = false; SBTN.style.width = "170px"; pp.style.bottom = "0px"; setTimeout(() => {label.textContent = "start stream"}, 300); pause();}
 
             if (ctx.state === "suspended") ctx.resume();
         });
@@ -213,11 +213,11 @@
             buffer = await ctx.decodeAudioData(audioData);
         
             Show("Cached in memory, deleting from server...");
-            await fetch("/delete", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ filename: data.filename })
-            });
+            // await fetch("/delete", {
+            //   method: "POST",
+            //   headers: { "Content-Type": "application/json" },
+            //   body: JSON.stringify({ filename: data.filename })
+            // });
         
             playFrom(offset); // запуск с текущего прогресса
           } else {
