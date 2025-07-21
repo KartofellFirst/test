@@ -233,11 +233,11 @@
 				  const diff = energy - lastEnergy;
 				
 				  if (diff > 20 && spikeCooldown <= 0) {
-				    bold();
-				    spikeCooldown = 20; // ~20 кадров паузы после всплеска
-				  } else if (energy > 90 && spikeCooldown <= 0) {
 				    thick();
-				    spikeCooldown = 20;
+				    spikeCooldown = 30; // ~20 кадров паузы после всплеска
+				  } else if (energy > 90 && spikeCooldown <= 0) {
+				    bold();
+				    spikeCooldown = 30;
 				  }
 				
 				  lastEnergy = energy;
