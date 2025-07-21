@@ -220,6 +220,7 @@
 
             if (data.success) {
                 Show("Media loaded, creating audio tag...")
+				document.querySelector("#player").innerHTML = "";
                 const audio = new Audio();
 				audio.src = data.filename;
 				audio.controls = true;
