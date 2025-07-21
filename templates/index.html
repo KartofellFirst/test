@@ -128,6 +128,17 @@
             color: white;
             background: none;
         }
+
+	    #bg-animation {
+            position: fixed;
+            top: 0; 
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.3;
+        }
     </style>
 </head>
 <body>
@@ -158,10 +169,12 @@
         <div id="player"></div>
         <span id="monitor"></span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
-        <button onclick="thick()">thick</button>
-        <button onclick="bold()">bold</button>
-        <button onclick="setColor('red')">set Red</button>
-        <button onclick="setColor('white')">set White</button>
+        <div style="display: flex;">
+            <button onclick="thick()" class="add">thick</button>
+            <button onclick="bold()" class="add">bold</button>
+            <button onclick="setColor('red')" class="add">set Red</button>
+            <button onclick="setColor('white')" class="add">set White</button>
+        </div>
     </main>
     <script>
         let ULM = "null";
