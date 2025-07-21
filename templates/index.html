@@ -189,7 +189,6 @@
 		const ctx = new (window.AudioContext || window.webkitAudioContext)();
 		let sourceNode = null;
 		const analyser = null;
-		analyser.fftSize = 256;
 		const dataArray = null;
 		let lastEnergy = 0;
 		let spikeCooldown = 0;
@@ -225,6 +224,7 @@
                 audio.src = data.filename;
 				sourceNode = ctx.createMediaElementSource(audio);
 				analyser = ctx.createAnalyser()
+				analyser.fftSize = 256;
 				dataArray = new Uint8Array(analyser.frequencyBinCount)	
 				sourceNode.connect(analyser);
 				analyser.connect(ctx.destination);
