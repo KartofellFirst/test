@@ -188,8 +188,8 @@
 
 		const ctx = new (window.AudioContext || window.webkitAudioContext)();
 		let sourceNode = null;
-		const analyser = null;
-		const dataArray = null;
+		let analyser = null;
+		let dataArray = null;
 		let lastEnergy = 0;
 		let spikeCooldown = 0;
 		
