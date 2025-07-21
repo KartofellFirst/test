@@ -163,85 +163,121 @@
 
     <main>
         <div style="display: flex;flex-direction: column;align-items: center;">
-            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause">▶</span><span>start stream</span></button></div>
+            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause">▶</span><span id="pp-label">start stream</span></button></div>
             <div class="track-info"><span class="author">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
         </div>
         <div id="player"></div>
         <span id="monitor"></span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
-        <div style="display: flex;">
-            <button onclick="thick()" class="add">thick</button>
-            <button onclick="bold()" class="add">bold</button>
-            <button onclick="setColor('red')" class="add">set Red</button>
-            <button onclick="setColor('white')" class="add">set White</button>
-        </div>
     </main>
     <script>
         let ULM = "null";
         let BLM = "null";
         let SID = 0;
         let NSID = 0;
+        let PSID = 0;
         let PLAY = false;
+
+        let ctx = new (window.AudioContext || window.webkitAudioContext)();
+        let buffer = null;
+        let source = null;
+        let startTime = 0;
+        let offset = 0;
+        let isPlaying = false;
+
         
         Show("Hello, my little client. What whould you ask?")
-        document.getElementById("spawn").addEventListener("click", async () => {
-            const pp = document.getElementById("play-pause");
-            if (pp.textContent == "▶") {pp.textContent = "∥"; PLAY = true;} 
-            else {pp.textContent = "▶"; PLAY = false;}
-            Show("Downloading your file...")
-            const res = await fetch("/play", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: document.querySelector("#songID").value || 0 })
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                Show("Media loaded, creating audio tag...")
-                const audio = document.createElement("audio");
-                audio.src = data.filename;
-                audio.controls = true;
-                audio.autoplay = true;
-
-                audio.addEventListener("canplaythrough", async () => {
-                    await fetch("/delete", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ filename: data.filename })
-                    });
-                    Show("Saved to cache, removing file from server...")
-                }, { once: true });
-
-                audio.addEventListener("error", async () => {
-                    Show("Redownloading the file on server");
-                    const res2 = await fetch("/play", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({})
-                    });
-                    const data2 = await res2.json();
-                    if (!data2.success) { 
-                        await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
-                        Show("Error occured, we sent a report in technical support. Please, reload the page");
-                    } else { 
-                        audio.load(); audio.play(); 
-                        Show("Playing...")
-                        audio.addEventListener("canplaythrough", async () => {
-                            await fetch("/delete", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ filename: data.filename })
-                            })}, { once: true });
-                            Show("Saved to cache, removing file from server...")
-                    }
-                })
-
-                document.getElementById("player").appendChild(audio);
-            } else {
-                await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
-                Show("Error occured, we sent a report in technical support. Please, reload the page")
-            }
+        document.getElementById("spawn").addEventListener("click", () => {
+            const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
+            if (pp.textContent == "▶") {pp.textContent = "||"; pp.style.fontWeight = "bold"; PLAY = true; label.textContent = "pause"; play();} 
+            else {pp.textContent = "▶"; PLAY = false; pp.style.fontWeight = "normal"; label.textContent = "start stream"; pause()}
         });
+
+        async function play() {
+          Show("Downloading your file...");
+          const res = await fetch("/play", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: SID })
+          });
+          const data = await res.json();
+        
+          if (data.success) {
+            Show("File loaded, decoding audio...");
+            const response = await fetch(data.filename);
+            const audioData = await response.arrayBuffer();
+            buffer = await ctx.decodeAudioData(audioData);
+        
+            Show("Cached in memory, deleting from server...");
+            await fetch("/delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ filename: data.filename })
+            });
+        
+            playFrom(offset); // запуск с текущего прогресса
+          } else {
+            await fetch("/report", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(`error while downloading ${data.filename}`)
+            });
+            Show("Error occurred. Reload the page.");
+          }
+        }
+        
+        function pause() {
+          if (source) source.stop();
+          offset = ctx.currentTime - startTime;
+          isPlaying = false;
+          source = null;
+        }
+
+
+        function playFrom(position = 0) {
+          source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(ctx.destination);
+          source.start(0, position);
+          startTime = ctx.currentTime - position;
+          isPlaying = true;
+        
+          source.onended = () => {
+            isPlaying = false;
+          };
+        }
+        
+        // async function play() {
+        //     Show("Downloading your file...")
+        //     const res = await fetch("/play", {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify({ id: SID })
+        //     });
+        //     const data = await res.json();
+
+        //     if (data.success) {
+        //         Show("Media loaded, creating audio tag...")
+        //         const audio = document.createElement("audio");
+        //         audio.src = data.filename;
+        //         audio.controls = true;
+        //         audio.autoplay = true;
+
+        //         audio.addEventListener("canplaythrough", async () => {
+        //             await fetch("/delete", {
+        //                 method: "POST",
+        //                 headers: { "Content-Type": "application/json" },
+        //                 body: JSON.stringify({ filename: data.filename })
+        //             });
+        //             Show("Saved to cache, removing file from server...")
+        //         }, { once: true });
+
+        //         document.getElementById("player").appendChild(audio);
+        //     } else {
+        //         await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
+        //         Show("Error occured, we sent a report in technical support. Please, reload the page")
+        //     }
+        // }
 
         async function Monitor() {
             const res = await fetch("/monitor", {
@@ -260,7 +296,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message, ulm: ULM, blm: BLM, sid: SID, nsid: NSID, play: PLAY })
+                body: JSON.stringify({ message: message, ulm: ULM, blm: BLM, sid: SID, nsid: NSID, psid: PSID, play: PLAY })
             });
     
             if (response.ok) {
