@@ -191,8 +191,10 @@
         const SBTN = document.getElementById("spawn")
         SBTN.addEventListener("click", () => {
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (pp.textContent == "▶") {pp.textContent = "⏸"; SBTN.style.width = "120px"; PLAY = true; label.textContent = "pause"; play();} 
-            else {pp.textContent = "▶"; PLAY = false; SBTN.style.width = "170px"; label.textContent = "start stream"; pause()}
+            if (pp.textContent == "▶") {pp.textContent = "\U+25AE\U+25AE"; SBTN.style.width = "120px"; PLAY = true; label.textContent = "pause"; play();} 
+            else {pp.textContent = "▶"; PLAY = false; SBTN.style.width = "170px"; setTimeout(() => {label.textContent = "start stream"}, 300); pause()}
+
+            if (ctx.state === "suspended") ctx.resume();
         });
 
         async function play() {
@@ -244,7 +246,6 @@
           startTime = ctx.currentTime - position;
           isPlaying = true;
 
-          if (ctx.state === "suspended") ctx.resume();
 
           source.onended = () => {
             isPlaying = false;
