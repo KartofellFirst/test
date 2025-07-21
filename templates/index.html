@@ -227,6 +227,7 @@
 				audio.autoplay = true;
 				audio.id = "audio";
 				audio.volume = 1;
+				document.querySelector("#player").appendChild(audio);
 				sourceNode = ctx.createMediaElementSource(audio);
 				analyser = ctx.createAnalyser()
 				analyser.fftSize = 256;
