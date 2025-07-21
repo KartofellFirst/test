@@ -190,11 +190,10 @@
 
         const SBTN = document.getElementById("spawn")
         SBTN.addEventListener("click", () => {
+			if (ctx.state === "suspended") ctx.resume();
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (pp.textContent == "▶") {pp.textContent = "\U+25AE\U+25AE"; SBTN.style.width = "120px"; pp.style.bottom = "2px"; PLAY = true; label.textContent = "pause"; play();} 
+            if (pp.textContent == "▶") {pp.textContent = "&#9208;"; SBTN.style.width = "120px"; pp.style.bottom = "2px"; PLAY = true; label.textContent = "pause"; play();} 
             else {pp.textContent = "▶"; PLAY = false; SBTN.style.width = "170px"; pp.style.bottom = "0px"; setTimeout(() => {label.textContent = "start stream"}, 300); pause();}
-
-            if (ctx.state === "suspended") ctx.resume();
         });
 
         async function play() {
