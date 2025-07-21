@@ -103,6 +103,7 @@
             justify-content: space-around;
             width: 170px;
             transition: color .6s ease;
+	        transition: width 0.3s ease, padding 0.3s ease;
         }
 
         main {
@@ -185,12 +186,13 @@
         let offset = 0;
         let isPlaying = false;
 
-        
         Show("Hello, my little client. What whould you ask?")
-        document.getElementById("spawn").addEventListener("click", () => {
+
+        const SBTN = document.getElementById("spawn")
+        SBTN.addEventListener("click", () => {
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (pp.textContent == "▶") {pp.textContent = "||"; pp.style.fontWeight = "bold"; PLAY = true; label.textContent = "pause"; play();} 
-            else {pp.textContent = "▶"; PLAY = false; pp.style.fontWeight = "normal"; label.textContent = "start stream"; pause()}
+            if (pp.textContent == "▶") {pp.textContent = "⏸"; SBTN.style.width = "120px"; PLAY = true; label.textContent = "pause"; play();} 
+            else {pp.textContent = "▶"; PLAY = false; SBTN.style.width = "170px"; label.textContent = "start stream"; pause()}
         });
 
         async function play() {
@@ -241,7 +243,9 @@
           source.start(0, position);
           startTime = ctx.currentTime - position;
           isPlaying = true;
-        
+
+          if (ctx.state === "suspended") ctx.resume();
+
           source.onended = () => {
             isPlaying = false;
           };
