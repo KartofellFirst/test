@@ -181,6 +181,11 @@
         let PLAY = false;
 		let CACHED = false;
 
+        Show("Hello, my little client. What whould you ask?")
+
+        const SBTN = document.getElementById("spawn");
+		const audio = document.getElementById("audio");
+
 		const ctx = new (window.AudioContext || window.webkitAudioContext)();
 		const sourceNode = ctx.createMediaElementSource(audio);
 		const analyser = ctx.createAnalyser();
@@ -191,10 +196,6 @@
 		let lastEnergy = 0;
 		let spikeCooldown = 0;
 		
-        Show("Hello, my little client. What whould you ask?")
-
-        const SBTN = document.getElementById("spawn");
-		const audio = document.getElementById("audio");
         SBTN.addEventListener("click", async () => {
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
             if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; SBTN.style.width = "130px"; label.textContent = "pause"; await play(); } 
