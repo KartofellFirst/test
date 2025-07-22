@@ -114,6 +114,13 @@ def home():
 @app.route("/awake")
 def for_awake():
     print("website pinged by UptimeRobot")
+    from pydub.utils import which
+    
+    if which("ffmpeg"):
+        return "✅ ffmpeg доступен для pydub"
+    else:
+        return "❌ ffmpeg НЕ найден — pydub не сможет работать с MP3"
+
     return "Now I`m awake, thank you!"
 
 @app.route("/play", methods=["POST"])
