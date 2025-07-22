@@ -114,12 +114,16 @@ def home():
 @app.route("/awake")
 def for_awake():
     print("website pinged by UptimeRobot")
-    from pydub.utils import which
-    
-    if which("ffmpeg"):
-        return "✅ ffmpeg доступен для pydub"
-    else:
-        return "❌ ffmpeg НЕ найден — pydub не сможет работать с MP3"
+    import subprocess
+
+    try:
+        result = subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if "ffmpeg version" in result.stdout:
+            return "✅ ffmpeg установлен и доступен"
+        else:
+            return "⚠️ ffmpeg не найден, либо недоступен"
+    except FileNotFoundError:
+        return "❌ ffmpeg не установлен или не в PATH"
 
     return "Now I`m awake, thank you!"
 
