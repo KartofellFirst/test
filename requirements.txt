@@ -4,4 +4,3 @@ requests
 gunicorn
 spotipy
 bs4
-pydub
