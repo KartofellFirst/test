@@ -240,14 +240,15 @@
 		const prev = document.getElementById("prev");
 		const artist = document.querySelector(".artist");
 		const title = document.querySelector(".title");
+		const audio = document.getElementById("audio")
 		
         SBTN.addEventListener("click", (event) => {
 			if (!SBTN.classList.contains("activated")) SBTN.classList.add("activated");
 			if (DOWNLOADSTARTED) return;
 			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
-            if (!PLAY) { PLAY = true; label.textContent = "pause"; play(event); 
-				if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; } // IOS fix
-			} else { PLAY = false; label.textContent = "play"; pause(event); } 
+            if (!PLAY) { ImitatePlay(); play(event); 
+				if (audio.paused) ImitatePause();  // IOS fix
+			} else { ImitatePause(); pause(event); } 
 			ShowClick();
         });
 
@@ -258,68 +259,68 @@
 		} 
         
         function pause(event) {
-        	document.getElementById("audio").pause();
+        	audio.pause();
         }
+
+		function ImitatePause() { PLAY = false; label.textContent = "play"; }
+		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
 
 
         function play(event) {
 			event.preventDefault() // IOS fix
-			if (CANPLAY) document.getElementById("audio").play();
-			if (!DOWNLOADSTARTED) Play()
+			if (CANPLAY) { audio.play(); return; }
+			if (!DOWNLOADSTARTED && !CACHED && !CANPLAY) { DOWNLOADSTARTED = TRUE; Play(); }
 		}
 		
         async function Play() {
-			DOWNLOADSTARTED = true;
-			CACHED = false; 
-			CANPLAY = false;
-            Show("Downloading your file...", 30)
-			Monitor();
-            const res = await fetch("/play", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: SID })
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                Show("Media loaded, creating audio tag...", 30)
-				document.querySelector("#player").innerHTML = "";
-                const audio = new Audio();
-				audio.src = data.filename;
-				audio.controls = true;
-				audio.autoplay = true;
-				audio.id = "audio";
-				audio.volume = 1;
-				document.querySelector("#player").appendChild(audio);
-				
-			    updateMediaSession({"title": data.data[2], "artist": data.data[3], "album": "NT collection", "picture": "static/fill.jpg"});
-				artist.textContent = data.data[3];
-				title.textContent = data.data[2];
-
-				audio.addEventListener("canplay", () => {CANPLAY = true}, { once: true })
-
-                audio.addEventListener("canplaythrough", async () => {
-					CACHED = true;
-                    Show("Saved to cache, removing file from server...", 30);
-                    await fetch("/delete", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ filename: data.filename })
-                    }).then(res => DOWNLOADSTARTED = false);
-					await wait(300);
-					Monitor();
-                }, { once: true });
-				
-                audio.play();
-            } else {
-                await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
-                Show("Error occured, we sent a report in technical support. Please, reload the page")
-            }
-        }
-
-		function CBC_mid() {
-			SBTN.style.borderColor = ""
+		    CACHED = false;
+		    CANPLAY = false;
+		    DOWNLOADSTARTED = true;
+		
+		    Show("Downloading your file...", 30);
+		    Monitor();
+		
+		    const res = await fetch("/play", {
+		        method: "POST",
+		        headers: { "Content-Type": "application/json" },
+		        body: JSON.stringify({ id: SID })
+		    });
+		    const data = await res.json();
+		
+		    if (data.success) {
+		        Show("Media loaded, creating audio tag...", 30);
+		        audio.pause(); // if still playing
+		        audio.src = data.filename; // update source
+		        audio.load(); // bufer reset
+		
+		        updateMediaSession({title: data.data[2], artist: data.data[3], album: "NT collection", picture: "static/fill.jpg"});
+		
+		        artist.textContent = data.data[3];
+		        title.textContent = data.data[2];
+		
+		        audio.addEventListener("canplay", () => {
+		            CANPLAY = true;
+		            audio.currentTime = 0;
+		            audio.play().catch(err => { ImitatePause(); /* IOS dont allowing autoplay */ });
+		            if (audio.paused) ImitatePause() // IOS dont allowing autoplay
+		        }, { once: true });
+		
+		        audio.addEventListener("canplaythrough", async () => {
+		            CACHED = true;
+		            Show("Saved to cache, removing file from server...", 30);
+		            await fetch("/delete", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: data.filename })});
+		            DOWNLOADSTARTED = false;
+		            Monitor();
+		        }, { once: true });
+		
+		    } else {
+		        ImitatePause();
+		        await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
+		        Show("Error occured, we sent a report in technical support. Please, reload the page");
+		        DOWNLOADSTARTED = false;
+		    }
 		}
+
 
 		function updateMediaSession(data) {
 			if ("mediaSession" in navigator) {
