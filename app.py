@@ -6,6 +6,8 @@ import csv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from bs4 import BeautifulSoup
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, APIC
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id="fd90af2b1c1447669656004c905a12c4",
@@ -114,30 +116,34 @@ def home():
 @app.route("/awake")
 def for_awake():
     print("website pinged by UptimeRobot")
-    import subprocess
-
-    try:
-        result = subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if "ffmpeg version" in result.stdout:
-            return "✅ ffmpeg установлен и доступен"
-        else:
-            return "⚠️ ffmpeg не найден, либо недоступен"
-    except FileNotFoundError:
-        return "❌ ffmpeg не установлен или не в PATH"
-
     return "Now I`m awake, thank you!"
 
 @app.route("/play", methods=["POST"])
 def download():
     data = request.get_json()
     id = data.get("id")
-    url = get_track_data(id)[1]
-    filename = f"{get_track_data(id)[0]}.mp3"
-    start = time.time() 
+    data = get_track_data(id)
+    url = data[1]
+    filename = f"{data[0]}.mp3"
     success = download_file(url, filename)
-    end = time.time()
-    print(f"⏳ Время загрузки: {end - start:.2f} секунд")
-    return jsonify({"success": success, "filename": "static/din/" + filename})
+    if success:
+        audio = MP3(filename, ID3=ID3)
+
+        metadata = {
+            "title": data[2],
+            "artist": data[3],
+            "album": "NT collection (Spotify+)",
+            "picture": "fill.jpg"
+        }
+        
+        for tag in audio.tags.values():
+            if isinstance(tag, APIC):
+                picture_path = f"static/din/{data[0]}.jpg"
+                with open(picture_path, 'wb') as img:
+                    img.write(tag.data)
+                metadata["picture"] = picture_path
+        
+    return jsonify({"success": success, "filename": "static/din/" + filename, "metadata": metadata})
 
 @app.route("/delete", methods=["POST"])
 def delete():
