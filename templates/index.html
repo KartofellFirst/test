@@ -166,13 +166,12 @@
 		}
 
 		.side {
-		    width: 40px;
 		    background: none;
 		    color: white;
 		    font-size: 30px;
 		    border: none;
 		    position: relative;
-		    bottom: 2px;
+/* 		    bottom: 2px; */
 		    opacity: 0.5;
 		    font-family: monospace;
 		    font-weight: bold;
@@ -229,11 +228,11 @@
 		
         SBTN.addEventListener("click", async () => {
 			SBTN.classList.add("activated"); pp.style.display = "none"; 
-			prev.textContent = "<"; next.textContent = ">"; 
+			prev.textContent = "<"; prev.style.with = "40px"; next.textContent = ">"; next.style.width = "40px";
             if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; label.textContent = "pause"; play(); 
 				if (document.querySelector("audio").paused) { label.textContent = "play"; pp.textContent = "►"; PLAY = false; } // IOS fix
 			} else { PLAY = false; pp.textContent = "►"; pp.style.bottom = "0px"; label.textContent = "play"; pause(); } 
-			SBTN.slassList.add("click"); await wait(300); SBTN.slassList.remove("click");
+			SBTN.classList.add("click"); await wait(300); SBTN.classList.remove("click");
         });
         
         function pause() {
