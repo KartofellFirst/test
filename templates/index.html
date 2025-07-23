@@ -180,17 +180,12 @@
         let PSID = 0;
         let PLAY = false;
 		let CACHED = false;
+		let MSA = false;
 
         Show("Hello, my little client. What whould you ask?")
+		Monitor()
 
         const SBTN = document.getElementById("spawn");
-
-		const ctx = new (window.AudioContext || window.webkitAudioContext)();
-		let sourceNode = null;
-		let analyser = null;
-		let dataArray = null;
-		let lastEnergy = 0;
-		let spikeCooldown = 0;
 		
         SBTN.addEventListener("click", async () => {
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
@@ -211,6 +206,7 @@
         async function Play() {
 			CACHED = false;
             Show("Downloading your file...")
+			Monitor();
             const res = await fetch("/play", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -227,37 +223,6 @@
 				audio.autoplay = true;
 				audio.id = "audio";
 				audio.volume = 1;
-				document.querySelector("#player").appendChild(audio);
-				sourceNode = ctx.createMediaElementSource(audio);
-				analyser = ctx.createAnalyser()
-				analyser.fftSize = 256;
-				dataArray = new Uint8Array(analyser.frequencyBinCount)	
-				sourceNode.connect(analyser);
-				analyser.connect(ctx.destination);
-
-				function monitorEnergy() {
-				  analyser.getByteFrequencyData(dataArray);
-				  const energy = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-				
-				  const diff = energy - lastEnergy;
-				
-				  if (diff > 20 && spikeCooldown <= 0) {
-				    thick();
-				    spikeCooldown = 20; // ~20 кадров паузы после всплеска
-				  } else if (energy > 90 && spikeCooldown <= 0) {
-				    bold();
-				    spikeCooldown = 20;
-				  }
-				
-				  lastEnergy = energy;
-				  spikeCooldown = Math.max(spikeCooldown - 1, 0);
-				  requestAnimationFrame(monitorEnergy);
-				}
-				
-				audio.addEventListener("play", async () => {
-			      await ctx.resume(); // важный момент для iOS
-			      monitorEnergy();    // запуск анализа
-			    });
 
                 audio.addEventListener("canplaythrough", async () => {
 					CACHED = true;
@@ -275,6 +240,40 @@
                 Show("Error occured, we sent a report in technical support. Please, reload the page")
             }
         }
+
+		function updateMediaSession(data) {
+			if ("mediaSession" in navigator) {
+				navigator.mediaSession.metadata = new MediaMetadata({
+					title: data.title || "example title",
+					artist: data.author || "unknown artist",
+					album: data.collection || "spotify collection",
+					artwork: [
+						{ src: data.picture, sizes: "512x512", type: "image/jpeg"}
+					]
+				});
+				
+				if (!MSA) {
+					navigator.mediaSession.setActionHandler("play", () => {
+						play()
+					});
+					
+					navigator.mediaSession.setActionHandler("pause", () => {
+						pause()
+					});
+					
+					navigator.mediaSession.setActionHandler("previoustrack", () => {
+						// Добавь свою логику
+						alert("previous")
+					});
+					
+					navigator.mediaSession.setActionHandler("nexttrack", () => {
+						// Добавь свою логику
+						alert("next")
+					});
+					MSA = true;
+				}
+			}
+		}
 
         async function Monitor() {
             const res = await fetch("/monitor", {
@@ -326,8 +325,7 @@
             }
           }
         
-          typeStep();
-          Monitor()
+          typeStep();	
         }
 
         function setColor(colorArray, duration = 1000) {
