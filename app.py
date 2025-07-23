@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import os, glob
 import requests, json
 import time
@@ -330,3 +330,7 @@ def generate_content():
             return jsonify({"text": "Sorry, server is unable to respond to you at the moment. Try again later 👉👈"})
     except Exception as e:
         return jsonify({"error": f"Ошибка при обработке запроса: {str(e)}"}), 500
+
+@app.route('/service-worker.js')
+def sw():
+    return send_from_directory('static', 'service-worker.js')
