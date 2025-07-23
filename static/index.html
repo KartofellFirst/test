@@ -10,7 +10,6 @@
 	  }
 	</script>
     <title>Аудио загрузка</title>
-	<link href="https://fonts.googleapis.com/css2?family=Oregano:ital@0;1&display=swap" rel="stylesheet">
     <style>
         * {
 			margin: 0;
@@ -302,7 +301,7 @@
 		    if (data.success) {
 		        Show("Media loaded, creating audio tag...", 30);
 		        ImitatePause(); // if still playing
-		        audio.src = data.filename; // update source
+		        audio.src = "https://test.zhmikh.ru/" + data.filename; // update source
 		        audio.load(); // bufer reset
 		
 		        updateMediaSession({title: data.data[2], artist: data.data[3], album: "NT collection", picture: "https://test.zhmikh.ru/static/fill.jpg"});
