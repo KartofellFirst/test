@@ -235,17 +235,8 @@
 				audio.id = "audio";
 				audio.volume = 1;
 				document.querySelector("#player").appendChild(audio);
-
-				fetch("/metadata", {
-			        method: "POST",
-			        body: JSON.stringify({ data: data.data }),
-			        headers: { "Content-Type": "application/json" }
-			      })
-			        .then(res => res.json())
-			        .then(meta => { 
-						updateMediaSession(meta.metadata); document.querySelector("#bg-animation").innerHTML = `<img src="${meta.metadata.picture}" id="pct" onload="alert('picture loaded')">`
-					});
-			    
+				
+			    updateMediaSession({"title": data.data[2], "artist": data.data[3], "album": "NT collection", "picture": "static/fill.jpg"})
 
                 audio.addEventListener("canplaythrough", async () => {
 					CACHED = true;
