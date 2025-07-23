@@ -90,23 +90,6 @@
             background-color: #000000;
         }
 
-        #spawn {
-            border: 1px solid white;
-            background-color: #000000;
-            box-shadow: 0px 0px 8px 0px rgba(255, 255, 255, 0.2);
-            margin: 10px;
-            color: white;
-            font-size: 20px;
-			font-weight: bold;
-            padding: 10px;
-            border-radius: 9999px;
-            display: flex;
-            justify-content: space-around;
-            width: 180px;
-            transition: color .6s ease;
-	        transition: width 0.2s ease, padding 0.2s ease;
-        }
-
         main {
             display: flex;
             align-items: center;
@@ -147,11 +130,57 @@
 			opacity: 0;
 			pointer-events: none;
 		}
+
+		#btn-container {
+			display: flex; 
+			flex-direction: column;
+			transition: border-color .7s ease;
+            transition: color .6s ease;
+	        transition: width 0.2s ease, padding 0.2s ease;
+            width: 180px;
+			padding: 2px;
+            box-shadow: 0px 0px 8px 0px rgba(255, 255, 255, 0.2);
+			overflow: hidden;
+            border: 1px solid white;
+            border-radius: 9999px;
+		}
+
+		#spawn {
+            border: none;
+            background-color: #000000;
+            color: white;
+            font-size: 20px;
+			font-weight: bold;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+			transition: border-color .7s ease;
+            transition: color .6s ease;
+	        transition: width 0.2s ease, padding 0.2s ease;
+        }
+
+		#spawn.activated {
+			border: 1px solid white;
+			width: 100px;
+		}
+
+		.side {
+		    width: 40px;
+		    background: none;
+		    color: white;
+		    font-size: 30px;
+		    border: none;
+		    position: relative;
+		    bottom: 2px;
+		    opacity: 0.5;
+		    font-family: monospace;
+		    font-weight: bold;
+		}
     </style>
 </head>
 <body>
-	<div id="bg-animation"></div>
-<!-- 	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
         <g id="chaos" transform="rotate(0 50 50)">
             <line x1="10" y1="10" x2="90" y2="80" stroke="white" stroke-width="0.2" />
             <line x1="30" y1="70" x2="80" y2="20" stroke="white" stroke-width="0.2" />
@@ -163,7 +192,7 @@
             <line x1="10" y1="80" x2="100" y2="20" stroke="white" stroke-width="0.2" />
             <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="50s" repeatCount="indefinite" />
         </g>
-    </svg> -->
+    </svg>
 	
     <header>
         <span class="logo">𝄢𓏢NT𓏢𝄢</span>
@@ -172,7 +201,7 @@
 
     <main>
         <div style="display: flex;flex-direction: column;align-items: center;">
-            <div style="display: flex; flex-direction: column;"><input id="songID" value="0" style="display: none;"><button id="spawn"><span id="play-pause" style="position: relative;font-family: 'Font Awesome 5 Free', sans-serif;">▶</span><span id="pp-label">start stream</span></button></div>
+            <div id="btn-container"><button class="side" id="prev"></button><button id="spawn"><span id="play-pause" style="position: relative;font-family: 'Font Awesome 5 Free', sans-serif;">▶</span><span id="pp-label">start stream</span></button><button class="side" id="next"></button></div>
             <div class="track-info"><span class="author">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
         </div>
         <div id="player"><audio id="audio" controls autoplay></div>
@@ -193,20 +222,22 @@
 		Monitor()
 
         const SBTN = document.getElementById("spawn");
+		const pp = document.getElementById("play-pause"); 
+		const label = document.getElementById("pp-label"); 
+		const next = document.getElementById("next"); 
+		const prev = document.getElementById("prev")
 		
         SBTN.addEventListener("click", async () => {
-            const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
-            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; SBTN.style.width = "130px"; label.textContent = "pause"; play(); } 
-			else { PLAY = false; pause(); pp.textContent = "▶"; SBTN.style.width = "180px"; pp.style.bottom = "0px"; setTimeout(() => { label.textContent = "start stream"; }, 150); } 
-			await wait(2000);
-			if (document.getElementById("audio").paused && PLAY) {
-				document.getElementById("audio").play()
-			}
+			SBTN.classList.add("activated");
+			prev.textContent = "<";
+			next.textContent = ">";
+            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; label.textContent = "pause"; play(); 
+				if (document.querySelector("audio").paused) { label.textContent = "play"; pp.textContent = "►"; PLAY = false; } // IOS fix
+			} else { PLAY = false; pp.textContent = "►"; pp.style.bottom = "0px"; label.textContent = "play"; pause(); } 
         });
-
         
         function pause() {
-          document.getElementById("audio").pause();
+        	document.getElementById("audio").pause();
         }
 
 
@@ -254,6 +285,10 @@
                 Show("Error occured, we sent a report in technical support. Please, reload the page")
             }
         }
+
+		function CBC_mid() {
+			SBTN.style.borderColor = ""
+		}
 
 		function updateMediaSession(data) {
 			if ("mediaSession" in navigator) {
