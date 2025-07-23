@@ -210,7 +210,7 @@
             <div id="btn-container"><button class="side" id="prev"></button><button id="spawn"><span id="play-pause" style="position: relative;font-family: 'Font Awesome 5 Free', sans-serif;">►</span><span id="pp-label">start stream</span></button><button class="side" id="next"></button></div>
             <div class="track-info"><span class="artist">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
         </div>
-        <div id="player"><audio id="audio" controls autoplay></div>
+        <div id="player"><audio id="audio" controls autoplay></audio></div>
         <span id="monitor"></span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
@@ -237,10 +237,10 @@
 		
         SBTN.addEventListener("click", async () => {
 			if (LOADING) return
-			if (!SBTN.classList.contain("activated")) { SBTN.classList.add("activated"); pp.style.display = "none"; }
+			if (!SBTN.classList.contains("activated")) { SBTN.classList.add("activated"); pp.style.display = "none"; }
 			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
             if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; label.textContent = "pause"; play(); 
-				if (document.querySelector("audio").paused) { label.textContent = "play"; pp.textContent = "►"; PLAY = false; } // IOS fix
+				if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; audio.play().catch(error => { show(error) })} // IOS fix
 			} else { PLAY = false; pp.style.bottom = "0px"; label.textContent = "play"; pause(); } 
 			SBTN.classList.add("click"); await wait(300); SBTN.classList.remove("click");
         });
