@@ -1,7 +1,7 @@
 {
   "name": "NT Streaming Servise_",
   "short_name": "NT",
-  "start_url": "/",
+  "start_url": "/static/index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
