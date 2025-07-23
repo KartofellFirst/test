@@ -141,6 +141,12 @@
             pointer-events: none;
             opacity: 0.3;
         }
+
+		audio {
+			position: absolute;
+			opacity: 0;
+			pointer-events: none;
+		}
     </style>
 </head>
 <body>
@@ -191,6 +197,10 @@
             const pp = document.getElementById("play-pause"); const label = document.getElementById("pp-label");
             if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; SBTN.style.width = "130px"; label.textContent = "pause"; play(); } 
 			else { PLAY = false; pause(); pp.textContent = "▶"; SBTN.style.width = "180px"; pp.style.bottom = "0px"; setTimeout(() => { label.textContent = "start stream"; }, 150); } 
+			await wait(2000);
+			if (document.getElementById("audio").paused && PLAY) {
+				document.getElementById("audio").play()
+			}
         });
 
         
@@ -199,7 +209,7 @@
         }
 
 
-        function play() {
+        async function play() {
 			CACHED? document.getElementById("audio").play() : Play()
 		}
 		
