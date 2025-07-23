@@ -94,6 +94,7 @@
 
         body {
             background-color: #000000;
+			overflow: hidden;
         }
 
         main {
@@ -120,7 +121,7 @@
             background: none;
         }
 
-	    .bg-wrapper {
+	    #bg-animation {
 			position: fixed;
 			top: 0; 
 			left: 0;
@@ -211,21 +212,19 @@
     </style>
 </head>
 <body>
-	<div class="bg-wrapper">
-		<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
-	        <g id="chaos" transform="rotate(0 50 50)">
-	            <line x1="10" y1="10" x2="90" y2="80" stroke="white" stroke-width="0.2" />
-	            <line x1="30" y1="70" x2="80" y2="20" stroke="white" stroke-width="0.2" />
-	            <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.2" />
-	            <line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="0.2" />
-	            <line x1="20" y1="30" x2="70" y2="90" stroke="white" stroke-width="0.2" />
-	            <line x1="90" y1="10" x2="10" y2="90" stroke="white" stroke-width="0.2" />
-	            <line x1="60" y1="15" x2="40" y2="85" stroke="white" stroke-width="0.2" />
-	            <line x1="10" y1="80" x2="100" y2="20" stroke="white" stroke-width="0.2" />
-	            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="50s" repeatCount="indefinite" />
-	        </g>
-	    </svg>
-	</div>
+	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+		<g id="chaos" transform="rotate(0 50 50)">
+			<line x1="10" y1="10" x2="90" y2="80" stroke="white" stroke-width="0.2" />
+			<line x1="30" y1="70" x2="80" y2="20" stroke="white" stroke-width="0.2" />
+			<line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.2" />
+			<line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="0.2" />
+			<line x1="20" y1="30" x2="70" y2="90" stroke="white" stroke-width="0.2" />
+			<line x1="90" y1="10" x2="10" y2="90" stroke="white" stroke-width="0.2" />
+			<line x1="60" y1="15" x2="40" y2="85" stroke="white" stroke-width="0.2" />
+			<line x1="10" y1="80" x2="100" y2="20" stroke="white" stroke-width="0.2" />
+			<animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="50s" repeatCount="indefinite" />
+		</g>
+	</svg>
 	
     <header>
         <span class="logo">𝄢𓏢NT𓏢𝄢</span>
