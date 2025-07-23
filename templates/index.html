@@ -269,7 +269,7 @@
         function play(event) {
 			event.preventDefault() // IOS fix
 			if (CANPLAY) { audio.play(); return; }
-			if (!DOWNLOADSTARTED && !CACHED && !CANPLAY) { DOWNLOADSTARTED = TRUE; Play(); }
+			if (!DOWNLOADSTARTED && !CACHED && !CANPLAY) { DOWNLOADSTARTED = true; Play(); }
 		}
 		
         async function Play() {
