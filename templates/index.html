@@ -242,8 +242,10 @@
 			        headers: { "Content-Type": "application/json" }
 			      })
 			        .then(res => res.json())
-			        .then(meta => { updateMediaSession(meta.metadata); document.querySelector("#bg-animation").innerHTML = `<img src="${meta.metadata.picture}" id="pct" onload="alert('picture loaded')">`});
-			    }
+			        .then(meta => { 
+						updateMediaSession(meta.metadata); document.querySelector("#bg-animation").innerHTML = `<img src="${meta.metadata.picture}" id="pct" onload="alert('picture loaded')">`
+					});
+			    
 
                 audio.addEventListener("canplaythrough", async () => {
 					CACHED = true;
