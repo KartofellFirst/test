@@ -240,7 +240,7 @@
 			if (!SBTN.classList.contains("activated")) { SBTN.classList.add("activated"); pp.style.display = "none"; }
 			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
             if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; label.textContent = "pause"; play(); 
-				if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; audio.play().catch(error => { show(error) })} // IOS fix
+				if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; audio.play().catch(error => { Show(error) })} // IOS fix
 			} else { PLAY = false; pp.style.bottom = "0px"; label.textContent = "play"; pause(); } 
 			SBTN.classList.add("click"); await wait(300); SBTN.classList.remove("click");
         });
@@ -256,7 +256,8 @@
 		}
 		
         async function Play() {
-			CACHED = false; LOADING = true;
+			CACHED = false; 
+			LOADING = true;
             Show("Downloading your file...", 30)
 			Monitor();
             const res = await fetch("/play", {
@@ -267,7 +268,6 @@
             const data = await res.json();
 
             if (data.success) {
-				LOADING = false;
                 Show("Media loaded, creating audio tag...", 30)
 				document.querySelector("#player").innerHTML = "";
                 const audio = new Audio();
@@ -293,8 +293,10 @@
 					await wait(300);
 					Monitor();
                 }, { once: true });
-
-                audio.play()
+                audio.play().catch(error => Show(error));
+				
+				await wait(200); 
+				LOADING = false;
             } else {
                 await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
                 Show("Error occured, we sent a report in technical support. Please, reload the page")
