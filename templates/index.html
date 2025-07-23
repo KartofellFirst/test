@@ -155,10 +155,14 @@
             justify-content: space-around;
             width: 100%;
 			border-radius: 9999px;
-			transition: border-color .7s ease;
+			transition: opacity .7s ease;
             transition: color .6s ease;
 	        transition: width 0.2s ease, padding 0.2s ease;
         }
+
+		#spawn.click {
+			opacity: 0.3;
+		}
 
 		#spawn.activated {
 			border: 1px solid white;
@@ -234,13 +238,14 @@
 		const artist = document.querySelector(".artist");
 		const title = document.querySelector(".title");
 		
-        SBTN.addEventListener("click", async (event) => {
+        SBTN.addEventListener("click", (event) => {
 			if (!SBTN.classList.contains("activated")) { SBTN.classList.add("activated"); pp.style.display = "none"; }
 			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
             if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; label.textContent = "pause"; play(event); 
 				if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; } // IOS fix
 			} else { PLAY = false; pp.style.bottom = "0px"; label.textContent = "play"; pause(event); } 
-			SBTN.classList.add("click"); await wait(300); SBTN.classList.remove("click");
+			SBTN.classList.add("click"); 
+			SBTN.classList.remove("click");
         });
         
         function pause(event) {
