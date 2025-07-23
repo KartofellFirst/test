@@ -157,6 +157,7 @@ def extract_metadata():
             with open(full_path, 'wb') as img:
                 img.write(tag.data)
             metadata["picture"] = full_path
+            break
     return jsonify({ "metadata": metadata })
 
 
