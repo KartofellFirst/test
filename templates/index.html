@@ -236,8 +236,14 @@
 				audio.volume = 1;
 				document.querySelector("#player").appendChild(audio);
 
-				updateMediaSession(data.metadata);
-				document.querySelector("#bg-animation").innerHTML = `<img src="${metadata.picture}" id="pct" onload="alert('picture loaded')">`
+				fetch("/metadata", {
+			        method: "POST",
+			        body: JSON.stringify({ filename: data.filename }),
+			        headers: { "Content-Type": "application/json" }
+			      })
+			        .then(res => res.json())
+			        .then(meta => { updateMediaSession(meta.metadata); document.querySelector("#bg-animation").innerHTML = `<img src="${meta.metadata.picture}" id="pct" onload="alert('picture loaded')">`});
+			    }
 
                 audio.addEventListener("canplaythrough", async () => {
 					CACHED = true;
