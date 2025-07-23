@@ -7,34 +7,34 @@
 	<link href="https://fonts.googleapis.com/css2?family=Oregano:ital@0;1&display=swap" rel="stylesheet">
     <style>
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
         }
         
         .cursor {
-          animation: blink 1s step-end infinite;
-          color: #fff;
+			animation: blink 1s step-end infinite;
+			color: #fff;
         }
         
         #screen {
-          font-family: 'Courier New', monospace;
-          background-color: #000;
-          color: #fff;
-          padding: 10px;
-          white-space: pre-wrap;
-          overflow-y: auto;
-          height: 200px;
-          border: 1px solid #444;
+			font-family: 'Courier New', monospace;
+			background-color: #000;
+			color: #fff;
+			padding: 10px;
+			white-space: pre-wrap;
+			overflow-y: auto;
+			height: 200px;
+			border: 1px solid #444;
         }
 
         .screen-input {
-          border: 1px solid #444;
-          color: #fff;
-          background: #000;
-          padding: 3px;
-          font-size: 16px;
-		  border-radius: 0px;
+			border: 1px solid #444;
+			color: #fff;
+			background: #000;
+			padding: 3px;
+			font-size: 16px;
+			border-radius: 0px;
         }
 
         .screen-input:focus {
@@ -201,7 +201,7 @@
     <main>
         <div style="display: flex;flex-direction: column;align-items: center;">
             <div id="btn-container"><button class="side" id="prev"></button><button id="spawn"><span id="play-pause" style="position: relative;font-family: 'Font Awesome 5 Free', sans-serif;">▶</span><span id="pp-label">start stream</span></button><button class="side" id="next"></button></div>
-            <div class="track-info"><span class="author">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
+            <div class="track-info"><span class="artist">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
         </div>
         <div id="player"><audio id="audio" controls autoplay></div>
         <span id="monitor"></span>
@@ -215,20 +215,24 @@
         let PSID = 0;
         let PLAY = false;
 		let CACHED = false;
+		let LOAD = false;
 		let MSA = false;
 
-        Show("Hello, my little client. What whould you ask?")
+        Show("Hello, my little client. What whould you ask?", 10)
 		Monitor()
 
         const SBTN = document.getElementById("spawn");
 		const pp = document.getElementById("play-pause"); 
 		const label = document.getElementById("pp-label"); 
 		const next = document.getElementById("next"); 
-		const prev = document.getElementById("prev")
+		const prev = document.getElementById("prev");
+		const artist = document.querySelector(".artist");
+		const title = document.querySelector(".title");
 		
         SBTN.addEventListener("click", async () => {
+			if (LOAD) return
 			SBTN.classList.add("activated"); pp.style.display = "none"; 
-			prev.textContent = "<"; prev.style.with = "40px"; next.textContent = ">"; next.style.width = "40px";
+			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
             if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; pp.textContent = "❚❚"; label.textContent = "pause"; play(); 
 				if (document.querySelector("audio").paused) { label.textContent = "play"; pp.textContent = "►"; PLAY = false; } // IOS fix
 			} else { PLAY = false; pp.textContent = "►"; pp.style.bottom = "0px"; label.textContent = "play"; pause(); } 
@@ -245,8 +249,8 @@
 		}
 		
         async function Play() {
-			CACHED = false;
-            Show("Downloading your file...")
+			CACHED = false; LOAD = true;
+            Show("Downloading your file...", 30)
 			Monitor();
             const res = await fetch("/play", {
                 method: "POST",
@@ -256,7 +260,8 @@
             const data = await res.json();
 
             if (data.success) {
-                Show("Media loaded, creating audio tag...")
+				LOAD = true;
+                Show("Media loaded, creating audio tag...", 30)
 				document.querySelector("#player").innerHTML = "";
                 const audio = new Audio();
 				audio.src = data.filename;
@@ -266,7 +271,9 @@
 				audio.volume = 1;
 				document.querySelector("#player").appendChild(audio);
 				
-			    updateMediaSession({"title": data.data[2], "artist": data.data[3], "album": "NT collection", "picture": "static/fill.jpg"})
+			    updateMediaSession({"title": data.data[2], "artist": data.data[3], "album": "NT collection", "picture": "static/fill.jpg"});
+				artist.textContent = data.data[3];
+				title.textContent = data.data[2];
 
                 audio.addEventListener("canplaythrough", async () => {
 					CACHED = true;
@@ -275,7 +282,7 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ filename: data.filename })
                     });
-                    Show("Saved to cache, removing file from server...")
+                    Show("Saved to cache, removing file from server...", 30)
                 }, { once: true });
 
                 audio.play()
@@ -294,7 +301,7 @@
 				navigator.mediaSession.metadata = new MediaMetadata({
 					title: data.title || "example title",
 					artist: data.artist || "unknown artist",
-					album: data.collection || "spotify collection",
+					album: data.collection || "NT collection",
 					artwork: [
 						{ src: data.picture, sizes: "512x512", type: "image/jpeg"}
 					]
