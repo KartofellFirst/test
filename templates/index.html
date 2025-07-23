@@ -176,6 +176,13 @@
 		    font-family: monospace;
 		    font-weight: bold;
 		}
+
+		#monitor {
+		    color: white;
+		    font-family: monospace;
+		    margin-bottom: -10px;
+		    margin-top: 10px;
+		}
     </style>
 </head>
 <body>
@@ -218,8 +225,7 @@
 		let LOAD = false;
 		let MSA = false;
 
-        Show("Hello, my little client. What whould you ask?", 10)
-		Monitor()
+        Show("Hello, my little client. What whould you ask?", 50)
 
         const SBTN = document.getElementById("spawn");
 		const pp = document.getElementById("play-pause"); 
@@ -260,7 +266,7 @@
             const data = await res.json();
 
             if (data.success) {
-				LOAD = true;
+				LOAD = false;
                 Show("Media loaded, creating audio tag...", 30)
 				document.querySelector("#player").innerHTML = "";
                 const audio = new Audio();
@@ -282,7 +288,9 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ filename: data.filename })
                     });
-                    Show("Saved to cache, removing file from server...", 30)
+                    Show("Saved to cache, removing file from server...", 30);
+					await wait(300);
+					Monitor();
                 }, { once: true });
 
                 audio.play()
