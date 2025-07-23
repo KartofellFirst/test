@@ -222,7 +222,6 @@
         let PSID = 0;
         let PLAY = false;
 		let CACHED = false;
-		let LOADING = false;
 		let MSA = false;
 
         Show("Hello, my little client. What whould you ask?", 50)
@@ -235,29 +234,26 @@
 		const artist = document.querySelector(".artist");
 		const title = document.querySelector(".title");
 		
-        SBTN.addEventListener("click", async () => {
-			if (LOADING) return
+        SBTN.addEventListener("click", async (event) => {
 			if (!SBTN.classList.contains("activated")) { SBTN.classList.add("activated"); pp.style.display = "none"; }
 			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
-            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; label.textContent = "pause"; play(); 
-				if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; audio.play().catch(error => { Show(error) })} // IOS fix
-			} else { PLAY = false; pp.style.bottom = "0px"; label.textContent = "play"; pause(); } 
+            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; label.textContent = "pause"; play(event); 
+				// if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; } // IOS fix
+			} else { PLAY = false; pp.style.bottom = "0px"; label.textContent = "play"; pause(event); } 
 			SBTN.classList.add("click"); await wait(300); SBTN.classList.remove("click");
         });
         
-        function pause() {
+        function pause(event) {
         	document.getElementById("audio").pause();
         }
 
 
-        async function play() {
-			if (LOADING) { document.getElementById("audio").play(); return; }
-			CACHED? document.getElementById("audio").play() : Play()
+        function play(event) {
+			CACHED? document.getElementById("audio").play() : Play(event)
 		}
 		
-        async function Play() {
+        async function Play(event) {
 			CACHED = false; 
-			LOADING = true;
             Show("Downloading your file...", 30)
 			Monitor();
             const res = await fetch("/play", {
@@ -293,10 +289,9 @@
 					await wait(300);
 					Monitor();
                 }, { once: true });
-                audio.play().catch(error => Show(error));
 				
-				await wait(200); 
-				LOADING = false;
+				event.preventDefault(); // IOS fix
+                audio.play();
             } else {
                 await fetch("/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
                 Show("Error occured, we sent a report in technical support. Please, reload the page")
