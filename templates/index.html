@@ -245,9 +245,9 @@
 			if (!SBTN.classList.contains("activated")) SBTN.classList.add("activated");
 			if (DOWNLOADSTARTED) return;
 			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
-            if (!PLAY) { PLAY = true; pp.style.bottom = "1px"; label.textContent = "pause"; play(event); 
+            if (!PLAY) { PLAY = true; label.textContent = "pause"; play(event); 
 				if (document.querySelector("audio").paused) { label.textContent = "play"; PLAY = false; } // IOS fix
-			} else { PLAY = false; pp.style.bottom = "0px"; label.textContent = "play"; pause(event); } 
+			} else { PLAY = false; label.textContent = "play"; pause(event); } 
 			ShowClick();
         });
 
