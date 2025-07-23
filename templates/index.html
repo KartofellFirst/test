@@ -318,6 +318,10 @@
             }
         }
 
+		function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
         function Show(text, delay=100) {
           text = `$Server>>> ${text}\n`
           const target = document.getElementById("screen");
