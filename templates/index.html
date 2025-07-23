@@ -155,13 +155,24 @@
             justify-content: space-around;
             width: 100%;
 			border-radius: 9999px;
-			transition: opacity .7s ease;
-            transition: color .6s ease;
-	        transition: width 0.2s ease, padding 0.2s ease;
+			transition: 
+			    opacity 0.7s ease,
+			    color 0.6s ease,
+			    background-color 0.4s ease,
+			    width 0.2s ease,
+			    padding 0.2s ease;
         }
 
-		#spawn.click {
+/* 		#spawn.click {
 			opacity: 0.3;
+			padding: 12px;
+    		width: 98%;
+		} */
+
+		#spawn:active {
+			opacity: 0.3;
+			padding: 12px;
+    		width: 98%;
 		}
 
 		#spawn.activated {
@@ -246,10 +257,11 @@
 			if (!SBTN.classList.contains("activated")) SBTN.classList.add("activated");
 			if (DOWNLOADSTARTED) return;
 			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
-            if (!PLAY) { ImitatePlay(); play(event); 
-				if (audio.paused) ImitatePause();  // IOS fix
-			} else { ImitatePause(); pause(event); } 
-			ShowClick();
+            if (!PLAY) { ImitatePlay(); play();
+				event.preventDefault(); /* IOS fix */
+				if (CANPLAY) audio.play(); /* IOS fix */
+				if (audio.paused) ImitatePause();  /* IOS fix */
+			} else { ImitatePause(); } 
         });
 
 		async function ShowClick() {
@@ -257,20 +269,14 @@
 			await wait(300);
 			SBTN.classList.remove("click");
 		} 
-        
-        function pause(event) {
-        	audio.pause();
-        }
 
-		function ImitatePause() { PLAY = false; label.textContent = "play"; }
-		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
-
-
-        function play(event) {
-			event.preventDefault() // IOS fix
-			if (CANPLAY) { audio.play(); return; }
+		function play() {
+			if (CANPLAY) return;
 			if (!DOWNLOADSTARTED && !CACHED && !CANPLAY) { DOWNLOADSTARTED = true; Play(); }
 		}
+
+		function ImitatePause() { PLAY = false; label.textContent = "play"; audio.pause(); ShowClick(); }
+		function ImitatePlay() { PLAY = true; label.textContent = "pause"; ShowClick(); } 
 		
         async function Play() {
 		    CACHED = false;
@@ -289,7 +295,7 @@
 		
 		    if (data.success) {
 		        Show("Media loaded, creating audio tag...", 30);
-		        audio.pause(); // if still playing
+		        ImitatePause(); // if still playing
 		        audio.src = data.filename; // update source
 		        audio.load(); // bufer reset
 		
@@ -302,7 +308,7 @@
 		            CANPLAY = true;
 		            audio.currentTime = 0;
 		            audio.play().catch(err => { ImitatePause(); /* IOS dont allowing autoplay */ });
-		            if (audio.paused) ImitatePause() // IOS dont allowing autoplay
+		            if (audio.paused) ImitatePause() /* IOS dont allowing autoplay */
 		        }, { once: true });
 		
 		        audio.addEventListener("canplaythrough", async () => {
