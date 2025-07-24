@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="https://fonts.googleapis.com/css2?family=Oregano:ital@0;1&display=swap" rel="stylesheet">
 	<link rel="manifest" href="static/manifest.json"> 
 	<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js")</script>
     <title>Аудио загрузка</title>
@@ -69,7 +70,7 @@
             font-size: 30px;
             color: #fff;
             text-shadow: #fff 2px 2px 10px;
-	        font-family: 'Oregano', cursive;
+	        font-family: 'Oregano';
             font-weight: bold;
         }
 
@@ -134,6 +135,8 @@
 			position: absolute;
 			opacity: 0;
 			pointer-events: none;
+			top: 0;
+			left: 0;
 		}
 
 		#btn-container {
@@ -168,22 +171,23 @@
 			    padding 0.2s ease;
         }
 
-/* 		#spawn.click {
-			opacity: 0.3;
-			padding: 12px;
-    		width: 98%;
-		} */
-
 		#spawn:active {
 			opacity: 0.3;
-			padding-right: 12px;
-			padding-left: 12px;
-    		width: 98%;
+			padding-right: 15px;
+			padding-left: 15px;
+    		width: 95%;
 		}
 
 		#spawn.activated {
 			border: 1px solid white;
 			width: 100px;
+		}
+
+		#spawn.inactive {
+			pointer-events: none;
+			opacity: 0.3;
+			border: 2px solid white;
+			padding: 8px;
 		}
 
 		.side {
@@ -192,7 +196,6 @@
 		    font-size: 30px;
 		    border: none;
 		    position: relative;
-/* 		    bottom: 2px; */
 		    opacity: 0.5;
 		    font-family: monospace;
 		    font-weight: bold;
@@ -207,7 +210,7 @@
     </style>
 </head>
 <body>
-<!-- 	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
 		<g id="chaos" transform="rotate(0 50 50)">
 			<line x1="10" y1="10" x2="90" y2="80" stroke="white" stroke-width="0.2" />
 			<line x1="30" y1="70" x2="80" y2="20" stroke="white" stroke-width="0.2" />
@@ -219,7 +222,7 @@
 			<line x1="10" y1="80" x2="100" y2="20" stroke="white" stroke-width="0.2" />
 			<animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="50s" repeatCount="indefinite" />
 		</g>
-	</svg> -->
+	</svg>
 	
     <header>
         <span class="logo">𝄢𓏢NT𓏢𝄢</span>
@@ -229,26 +232,24 @@
     <main>
         <div style="display: flex;flex-direction: column;align-items: center;">
 			
-            <div id="btn-container"><button class="side" id="prev" ontouchstart></button><button id="spawn" ontouchstart><span id="pp-label">start stream</span></button><button class="side" id="next" ontouchstart></button></div>
-            <div class="track-info"><span class="artist">Inuyaski</span> - <span class="title">Lagtrain feat Kaai Yuki</span></div>
+            <div id="btn-container"><button class="side" id="prev" ontouchstart></button><button id="spawn" ontouchstart class="inactive"><span id="pp-label">preparing...</span></button><button class="side" id="next" ontouchstart></button></div>
+            <div class="track-info"><span class="artist"></span> - <span class="title"></span></div>
         </div>
-        <div id="player"><audio id="audio" controls autoplay></audio></div>
+        <div id="player"><audio id="audio" controls autoplay></audio><audio id="audio-next"></audio><audio id="audio-prev"></audio></div>
         <span id="monitor"></span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
     <script>
         let ULM = "null";
         let BLM = "null";
-        let SID = 0;
-        let NSID = 0;
+        let SID = getNextTrackId();
+        let NSID = getNextTrackId();
         let PSID = 0;
         let PLAY = false;
 		let CACHED = false;
-		let CANPLAY = false;
-		let DOWNLOADSTARTED = false;
 		let MSA = false;
 
-        Show("Hello, my little client. What whould you ask?", 50)
+        Show("Hello, my little client. What whould you ask?", 30)
 
         const SBTN = document.getElementById("spawn");
 		// const pp = document.getElementById("play-pause"); 
@@ -257,81 +258,170 @@
 		const prev = document.getElementById("prev");
 		const artist = document.querySelector(".artist");
 		const title = document.querySelector(".title");
-		const audio = document.getElementById("audio")
+
+		await Prepare(document.getElementById("audio"), SID);
+		Show("Your track is ready!", 30);
+		SBTN.classList.remove("inactive"); label.textContent = "start stream"
+		await Prepare(document.getElementById("audio-next"), NSID);
+		Show("Next track just loaded", 30);
+		
 		
         SBTN.addEventListener("click", (event) => {
-			if (!SBTN.classList.contains("activated")) SBTN.classList.add("activated");
-			if (DOWNLOADSTARTED) return;
-			prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px";
-            if (!PLAY) { ImitatePlay(); play();
-				event.preventDefault(); /* IOS fix */
-				if (CANPLAY) audio.play(); /* IOS fix */
-				if (audio.paused) ImitatePause();  /* IOS fix */
-			} else { ImitatePause(); } 
+			const audio = document.getElementById("audio");
+			SBTN.classList.add("activated"); prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px"; // decorations
+            if (!PLAY) { ImitatePlay(); audio.play(); if (audio.paused) ImitatePause();
+			} else { ImitatePause(); audio.pause(); } 
         });
 
-		async function ShowClick() {
-			SBTN.classList.add("click"); 
-			await wait(300);
-			SBTN.classList.remove("click");
-		} 
+		function ImitatePause() { PLAY = false; label.textContent = "play"; }
+		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
 
-		function play() {
-			if (CANPLAY) return;
-			if (!DOWNLOADSTARTED && !CACHED && !CANPLAY) { DOWNLOADSTARTED = true; Play(); }
-		}
-
-		function ImitatePause() { PLAY = false; label.textContent = "play"; audio.pause(); ShowClick(); }
-		function ImitatePlay() { PLAY = true; label.textContent = "pause"; ShowClick(); } 
-		
-        async function Play() {
-		    CACHED = false;
-		    CANPLAY = false;
-		    DOWNLOADSTARTED = true;
-		
-		    Show("Downloading your file...", 30);
-		    Monitor();
-		
+		async function Prepare(audioElement, trackId) {
+		  try {
 		    const res = await fetch("https://test.zhmikh.ru/play", {
-		        method: "POST",
-		        headers: { "Content-Type": "application/json" },
-		        body: JSON.stringify({ id: SID })
+		      method: "POST",
+		      headers: { "Content-Type": "application/json" },
+		      body: JSON.stringify({ id: trackId })
 		    });
 		    const data = await res.json();
 		
-		    if (data.success) {
-		        Show("Media loaded, creating audio tag...", 30);
-		        ImitatePause(); // if still playing
-		        audio.src = data.filename; // update source
-		        audio.load(); // bufer reset
+		    if (!data.success) throw new Error("Failed to fetch track");
 		
-		        updateMediaSession({"title": data.data[2], "artist": data.data[3], "album": "NT collection", "picture": "https://test.zhmikh.ru/static/fill.jpg"});
+		    // 1. Обновляем src и загружаем
+		    audioElement.src = "https://test.zhmikh.ru/" + data.filename;
+		    audioElement.load();
 		
-		        artist.textContent = data.data[3];
-		        title.textContent = data.data[2];
+		    // 2. Ждём полной готовности
+		    await new Promise(resolve => {
+		      audioElement.addEventListener("canplaythrough", resolve, { once: true });
+		    });
 		
-		        audio.addEventListener("canplay", () => {
-		            CANPLAY = true;
-		            audio.currentTime = 0;
-		            audio.play().catch(err => { ImitatePause(); /* IOS dont allowing autoplay */ });
-		            if (audio.paused) ImitatePause() /* IOS dont allowing autoplay */
-		        }, { once: true });
+		    // 3. Кешировано — можно удалить с сервера
+		    await fetch("https://test.zhmikh.ru/delete", {
+		      method: "POST",
+		      headers: { "Content-Type": "application/json" },
+		      body: JSON.stringify({ filename: data.filename })
+		    });
 		
-		        audio.addEventListener("canplaythrough", async () => {
-		            CACHED = true;
-		            Show("Saved to cache, removing file from server...", 30);
-		            await fetch("https://test.zhmikh.ru/delete", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: data.filename })});
-		            DOWNLOADSTARTED = false;
-		            Monitor();
-		        }, { once: true });
+		    // 4. Обновим MediaSession (если это главный трек)
+		    if (audioElement.id === "audio") {
+		      updateMediaSession({
+		        title: data.data[2],
+		        artist: data.data[3],
+		        picture: "https://test.zhmikh.ru/static/fill.jpg"
+		      });
 		
-		    } else {
-		        ImitatePause();
-		        await fetch("https://test.zhmikh.ru/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
-		        Show("Error occured, we sent a report in technical support. Please, reload the page");
-		        DOWNLOADSTARTED = false;
+		      // Обновим интерфейс
+		      document.querySelector(".title").textContent = data.data[2];
+		      document.querySelector(".artist").textContent = data.data[3];
 		    }
+		  } catch (e) {
+		    console.error("Prepare error:", e);
+		    Show("Error loading track.");
+		  }
 		}
+
+		next.addEventListener("click", async () => {
+		  // 1. Заглушить всё
+		  document.querySelectorAll("audio").forEach(a => {
+		    a.pause();
+		    a.currentTime = 0;
+		  });
+		
+		  // 2. Запустить следующий трек
+		  const nextPlayer = document.getElementById("audio-next");
+		  nextPlayer.play();
+		
+		  // 3. Переименовать элементы
+		  const prevPlayer = document.getElementById("audio-prev");
+		  const currentPlayer = document.getElementById("audio");
+		
+		  prevPlayer.id = "audio-next";  // он станет новым next
+		  currentPlayer.id = "audio-prev"; // он станет prev
+		  nextPlayer.id = "audio"; // он становится главным
+		
+		  // 4. Начать подготовку следующего трека
+		  const nextTrackId = getNextTrackId(); // ← твоя логика выбора
+		  Prepare(document.getElementById("audio-next"), nextTrackId);
+		});
+
+		prev.addEventListener("click", async () => {
+		  // 1. Заглушить всё
+		  document.querySelectorAll("audio").forEach(a => {
+		    a.pause();
+		    a.currentTime = 0;
+		  });
+		
+		  // 2. Запустить предыдущий трек
+		  const prevPlayer = document.getElementById("audio-prev");
+		  prevPlayer.play();
+		
+		  // 3. Переименовать элементы
+		  const nextPlayer = document.getElementById("audio-next");
+		  const currentPlayer = document.getElementById("audio");
+		
+		  prevPlayer.id = "audio";  // он станет новым главным
+		  currentPlayer.id = "audio-next"; // он станет next
+		  nextPlayer.id = "audio-prev"; // он становится prev 
+		
+		  // 4. Начать подготовку предыдущего трека
+		  const prevTrackId = getPreviousTrackId(); // ← твоя логика выбора
+		  Prepare(document.getElementById("audio-prev"), prevTrackId);
+		});
+
+		function getNextTrackId() {
+			return 0;
+		}
+
+		function getPreviousTrackId() {
+			return 0;
+		}
+
+
+		
+  //       async function Play() {
+		//     Show("Downloading your file...", 30);
+		//     Monitor();
+		
+		//     const res = await fetch("https://test.zhmikh.ru/play", {
+		//         method: "POST",
+		//         headers: { "Content-Type": "application/json" },
+		//         body: JSON.stringify({ id: SID })
+		//     });
+		//     const data = await res.json();
+		
+		//     if (data.success) {
+		//         Show("Media loaded, creating audio tag...", 30);
+		//         audio.src = data.filename; // update source
+		//         audio.load(); // bufer reset
+		
+		//         updateMediaSession({"title": data.data[2], "artist": data.data[3], "album": "NT collection", "picture": "https://test.zhmikh.ru/static/fill.jpg"});
+		
+		//         artist.textContent = data.data[3];
+		//         title.textContent = data.data[2];
+		
+		//         audio.addEventListener("canplay", () => {
+		//             CANPLAY = true;
+		//             audio.currentTime = 0;
+		//             audio.play().catch(err => { ImitatePause(); /* IOS dont allowing autoplay */ });
+		//             if (audio.paused) ImitatePause() /* IOS dont allowing autoplay */
+		//         }, { once: true });
+		
+		//         audio.addEventListener("canplaythrough", async () => {
+		//             CACHED = true;
+		//             Show("Saved to cache, removing file from server...", 30);
+		//             await fetch("https://test.zhmikh.ru/delete", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: data.filename })});
+		//             DOWNLOADSTARTED = false;
+		//             Monitor();
+		//         }, { once: true });
+		
+		//     } else {
+		//         ImitatePause();
+		//         await fetch("https://test.zhmikh.ru/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
+		//         Show("Error occured, we sent a report in technical support. Please, reload the page");
+		//         DOWNLOADSTARTED = false;
+		//     }
+		// }
 
 
 		function updateMediaSession(data) {
@@ -347,11 +437,11 @@
 				
 				if (!MSA) {
 					navigator.mediaSession.setActionHandler("play", () => {
-						play()
+						audio.play();
 					});
 					
 					navigator.mediaSession.setActionHandler("pause", () => {
-						pause()
+						audio.pause();
 					});
 					
 					navigator.mediaSession.setActionHandler("previoustrack", () => {
