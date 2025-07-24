@@ -394,6 +394,8 @@
 						{ src: data.picture, sizes: "512x512", type: "image/jpeg"}
 					]
 				});
+
+				alert("updated", data.title, data.artist) 
 				
 				if (!MSA) {
 					navigator.mediaSession.setActionHandler("play", () => {
