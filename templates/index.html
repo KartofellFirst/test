@@ -305,6 +305,8 @@
 
 		    await new Promise(resolve => {
 		      audioElement.addEventListener("canplaythrough", resolve, { once: true });
+				console.log("canplaythrough")
+				
 		    });
 		
 		    // 3. Кешировано — можно удалить с сервера
