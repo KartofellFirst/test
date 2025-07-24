@@ -248,7 +248,7 @@
         let PLAY = false;
 		let CACHED = false;
 		let MSA = false;
-		let toMediaSession = {}
+		let IFT = true;
 
         Show("Hello, my little client. What whould you ask?", 30)
 
@@ -262,8 +262,6 @@
 
 		
 		Prepare(document.getElementById("audio"), SID).then(async () => {
-			Show("Your track is ready!", 30);
-			SBTN.classList.remove("inactive"); label.textContent = "start stream";
 			await Prepare(document.getElementById("audio-next"), NSID);
 			Show("Next track just loaded", 30);
 		})
@@ -300,14 +298,16 @@
 		
 		    // 2. Ждём полной готовности
 			await new Promise(resolve => {
-			  audioElement.addEventListener("loadedmetadata", resolve, { once: true });
+			    audioElement.addEventListener("loadedmetadata", resolve, { once: true });
 			});
 
+			if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
+			console.log("loadedmetadata")
+
 		    await new Promise(resolve => {
-		      audioElement.addEventListener("canplaythrough", resolve, { once: true });
-				console.log("canplaythrough")
-				
+		        audioElement.addEventListener("canplaythrough", resolve, { once: true });
 		    });
+			console.log("canplaythrough")
 		
 		    // 3. Кешировано — можно удалить с сервера
 		    await fetch("https://test.zhmikh.ru/delete", {
