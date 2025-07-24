@@ -328,7 +328,11 @@
 		}
 
 		next.addEventListener("click", async () => {
-		  // 1. Заглушить всё
+		  toNext();
+		});
+
+		function toNext() {
+			// 1. Заглушить всё
 		  document.querySelectorAll("audio").forEach(a => {
 		    a.pause();
 		    a.currentTime = 0;
@@ -349,10 +353,14 @@
 		  // 4. Начать подготовку следующего трека
 		  const nextTrackId = getNextTrackId(); // ← твоя логика выбора
 		  Prepare(document.getElementById("audio-next"), nextTrackId);
-		});
+		}
 
 		prev.addEventListener("click", async () => {
-		  // 1. Заглушить всё
+		  toPrev();
+		});
+
+		function toPrev() {
+			// 1. Заглушить всё
 		  document.querySelectorAll("audio").forEach(a => {
 		    a.pause();
 		    a.currentTime = 0;
@@ -373,7 +381,7 @@
 		  // 4. Начать подготовку предыдущего трека
 		  const prevTrackId = getPreviousTrackId(); // ← твоя логика выбора
 		  Prepare(document.getElementById("audio-prev"), prevTrackId);
-		});
+		}
 
 		function getNextTrackId() {
 			return 0;
@@ -395,25 +403,23 @@
 					]
 				});
 
-				alert("updated", data.title, data.artist) 
 				
 				if (!MSA) {
 					navigator.mediaSession.setActionHandler("play", () => {
-						audio.play();
+						document.querySelector("#audio").play();
 					});
 					
 					navigator.mediaSession.setActionHandler("pause", () => {
-						audio.pause();
+						document.querySelector("#audio").pause();
 					});
 					
 					navigator.mediaSession.setActionHandler("previoustrack", () => {
-						// Добавь свою логику
-						alert("previous")
+						if (document.querySelector("#audio").currentTime < 4) { toPrev(); }
+						else { document.querySelector("#audio").currentTime = 0; }
 					});
 					
 					navigator.mediaSession.setActionHandler("nexttrack", () => {
-						// Добавь свою логику
-						alert("next")
+						toNext();
 					});
 					MSA = true;
 				}
