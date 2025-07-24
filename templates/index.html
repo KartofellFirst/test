@@ -248,6 +248,7 @@
         let PLAY = false;
 		let CACHED = false;
 		let MSA = false;
+		let toMediaSession = {}
 
         Show("Hello, my little client. What whould you ask?", 30)
 
@@ -271,7 +272,7 @@
         SBTN.addEventListener("click", (event) => {
 			const audio = document.getElementById("audio");
 			SBTN.classList.add("activated"); prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px"; // decorations
-            if (!PLAY) { ImitatePlay(); audio.play(); if (audio.paused) ImitatePause();
+            if (!PLAY) { ImitatePlay(); audio.play(); updateMediaSession(); if (audio.paused) ImitatePause();
 			} else { ImitatePause(); audio.pause(); } 
         });
 
@@ -291,9 +292,17 @@
 		
 		    // 1. Обновляем src и загружаем
 		    audioElement.src = "https://test.zhmikh.ru/" + data.filename;
+			audioElement.dataset.title = data.data[2];
+			audioElement.dataset.artist = data.data[3];
+			audioElement.dataset.picture = "https://test.zhmikh.ru/static/fill.jpg";
+			audioElement.dataset.collection = "NT collection";
 		    audioElement.load();
 		
 		    // 2. Ждём полной готовности
+			await new Promise(resolve => {
+			  audioElement.addEventListener("loadedmetadata", resolve, { once: true });
+			});
+
 		    await new Promise(resolve => {
 		      audioElement.addEventListener("canplaythrough", resolve, { once: true });
 		    });
@@ -305,17 +314,10 @@
 		      body: JSON.stringify({ filename: data.filename })
 		    });
 		
-		    // 4. Обновим MediaSession (если это главный трек)
+		    // 4. Обновим данные (если это главный трек)
 		    if (audioElement.id === "audio") {
-		      updateMediaSession({
-		        title: data.data[2],
-		        artist: data.data[3],
-		        picture: "https://test.zhmikh.ru/static/fill.jpg"
-		      });
-		
-		      // Обновим интерфейс
-		      document.querySelector(".title").textContent = data.data[2];
-		      document.querySelector(".artist").textContent = data.data[3];
+			  document.querySelector(".title").textContent = data.data[2];
+			  document.querySelector(".artist").textContent = data.data[3];
 		    }
 		  } catch (e) {
 		    console.error("Prepare error:", e);
@@ -378,56 +380,10 @@
 		function getPreviousTrackId() {
 			return 0;
 		}
-
-
 		
-  //       async function Play() {
-		//     Show("Downloading your file...", 30);
-		//     Monitor();
-		
-		//     const res = await fetch("https://test.zhmikh.ru/play", {
-		//         method: "POST",
-		//         headers: { "Content-Type": "application/json" },
-		//         body: JSON.stringify({ id: SID })
-		//     });
-		//     const data = await res.json();
-		
-		//     if (data.success) {
-		//         Show("Media loaded, creating audio tag...", 30);
-		//         audio.src = data.filename; // update source
-		//         audio.load(); // bufer reset
-		
-		//         updateMediaSession({"title": data.data[2], "artist": data.data[3], "album": "NT collection", "picture": "https://test.zhmikh.ru/static/fill.jpg"});
-		
-		//         artist.textContent = data.data[3];
-		//         title.textContent = data.data[2];
-		
-		//         audio.addEventListener("canplay", () => {
-		//             CANPLAY = true;
-		//             audio.currentTime = 0;
-		//             audio.play().catch(err => { ImitatePause(); /* IOS dont allowing autoplay */ });
-		//             if (audio.paused) ImitatePause() /* IOS dont allowing autoplay */
-		//         }, { once: true });
-		
-		//         audio.addEventListener("canplaythrough", async () => {
-		//             CACHED = true;
-		//             Show("Saved to cache, removing file from server...", 30);
-		//             await fetch("https://test.zhmikh.ru/delete", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: data.filename })});
-		//             DOWNLOADSTARTED = false;
-		//             Monitor();
-		//         }, { once: true });
-		
-		//     } else {
-		//         ImitatePause();
-		//         await fetch("https://test.zhmikh.ru/report", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(`error while downloading ${data.filename}`)});
-		//         Show("Error occured, we sent a report in technical support. Please, reload the page");
-		//         DOWNLOADSTARTED = false;
-		//     }
-		// }
-
-
-		function updateMediaSession(data) {
+		function updateMediaSession() {
 			if ("mediaSession" in navigator) {
+				const data = document.getElementById("audio").dataset;
 				navigator.mediaSession.metadata = new MediaMetadata({
 					title: data.title || "example title",
 					artist: data.artist || "unknown artist",
