@@ -259,11 +259,13 @@
 		const artist = document.querySelector(".artist");
 		const title = document.querySelector(".title");
 
-		await Prepare(document.getElementById("audio"), SID);
-		Show("Your track is ready!", 30);
-		SBTN.classList.remove("inactive"); label.textContent = "start stream"
-		await Prepare(document.getElementById("audio-next"), NSID);
-		Show("Next track just loaded", 30);
+		
+		Prepare(document.getElementById("audio"), SID).then(async () => {
+			Show("Your track is ready!", 30);
+			SBTN.classList.remove("inactive"); label.textContent = "start stream";
+			await Prepare(document.getElementById("audio-next"), NSID);
+			Show("Next track just loaded", 30);
+		})
 		
 		
         SBTN.addEventListener("click", (event) => {
