@@ -208,6 +208,18 @@
 		    margin-top: 10px;
 		}
 
+		.refuse {
+			animation: refuse 0.4s ease;
+		}
+		
+		#next.next {
+			animation: next .9s ease;
+		} 
+
+		#prev.next {
+			animation: prev .9s ease;
+		}
+
 		@keyframes refuse {
 			0%   { transform: translateX(0); }
 			25%  { transform: translateX(-6px); }
@@ -216,10 +228,19 @@
 			100% { transform: translateX(0); }
 		}
 		
-		.refuse {
-			animation: refuse 0.4s ease;
+		@keyframes next {
+			0% { transform: translateX(0); opacity: 1; }
+			75% { transform: translateX(20px); opacity: 0; }
+			76% { transform: translateX(0); opacity: 0; }
+			100% { opacity: 1; }
 		}
 
+		@keyframes prev {
+			0% { transform: translateX(0); opacity: 1; }
+			75% { transform: translateX(-20px); opacity: 0; }
+			76% { transform: translateX(0); opacity: 0; }
+			100% { opacity: 1; }
+		}
     </style>
 </head>
 <body>
@@ -296,53 +317,65 @@
 		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
 
 		async function Prepare(audioElement, trackId) {
-		  try {
-		    const res = await fetch("https://test.zhmikh.ru/play", {
-		      method: "POST",
-		      headers: { "Content-Type": "application/json" },
-		      body: JSON.stringify({ id: trackId })
-		    });
-		    const data = await res.json();
-		
-		    if (!data.success) throw new Error("Failed to fetch track");
-		
-		    // 1. Обновляем src и загружаем
-		    audioElement.src = "https://test.zhmikh.ru/" + data.filename;
-			audioElement.dataset.title = data.data[2];
-			audioElement.dataset.artist = data.data[3];
-			audioElement.dataset.picture = "https://test.zhmikh.ru/static/fill.jpg";
-			audioElement.dataset.collection = "NT collection";
-		    audioElement.load();
-		
-		    // 2. Ждём полной готовности
-			await new Promise(resolve => {
-			    audioElement.addEventListener("canplay", resolve, { once: true });
-			});
+			function waitForCanplaythrough(audio) {
+				return new Promise((resolve, reject) => {
+					const timeout = setTimeout(() => {
+						Show("[ERROR] Please, check your internet connection, its too slow... This process usually takes 2-3 seconds on old devises, you take more than 10", 50);
+						reject(new Error("canplaythrough timeout"));
+					}, 10000); // 10 секунд
+					
+					audio.addEventListener("canplaythrough", () => {
+						clearTimeout(timeout);
+						resolve();
+					}, { once: true });
+				});
+			}
 
-			if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
-			console.log("canplay")
-
-		    await new Promise(resolve => {
-		        audioElement.addEventListener("canplaythrough", resolve, { once: true });
-		    });
-			console.log("canplaythrough")
-		
-		    // 3. Кешировано — можно удалить с сервера
-		    await fetch("https://test.zhmikh.ru/delete", {
-		      method: "POST",
-		      headers: { "Content-Type": "application/json" },
-		      body: JSON.stringify({ filename: data.filename })
-		    });
-		
-		    // 4. Обновим данные (если это главный трек)
-		    if (audioElement.id === "audio") {
-			  document.querySelector(".title").textContent = data.data[2];
-			  document.querySelector(".artist").textContent = data.data[3];
-		    }
-		  } catch (e) {
-		    console.error("Prepare error:", e);
-		    Show("Error loading track.");
-		  }
+			try {
+				const res = await fetch("https://test.zhmikh.ru/play", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ id: trackId })
+				});
+				const data = await res.json();
+				
+				if (!data.success) throw new Error("Failed to fetch track");
+				
+				// 1. Обновляем src и загружаем
+				audioElement.src = "https://test.zhmikh.ru/" + data.filename;
+				audioElement.dataset.title = data.data[2];
+				audioElement.dataset.artist = data.data[3];
+				audioElement.dataset.picture = "https://test.zhmikh.ru/static/fill.jpg";
+				audioElement.dataset.collection = "NT collection";
+				audioElement.load();
+				
+				// 2. Ждём полной готовности
+				await new Promise(resolve => {
+					audioElement.addEventListener("canplay", resolve, { once: true });
+				});
+				
+				if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
+				console.log("canplay")
+				
+				await waitForCanplaythrough(audioElement);
+				console.log("canplaythrough")
+				
+				// 3. Кешировано — можно удалить с сервера
+				await fetch("https://test.zhmikh.ru/delete", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ filename: data.filename })
+				});
+				
+				// 4. Обновим данные (если это главный трек)
+				if (audioElement.id === "audio") {
+					document.querySelector(".title").textContent = data.data[2];
+					document.querySelector(".artist").textContent = data.data[3];
+				}
+			} catch (e) {
+				console.error("Prepare error:", e);
+				Show("Error loading track.");
+			}
 		}
 
 		async function refuse(el) {
@@ -352,6 +385,19 @@
 			}, 400); 
 		}
 
+		async function animateNext() {
+			next.classList.add("next");
+			setTimeout(() => {
+				next.classList.remove("next");
+			}, 900);
+		}
+
+		async function animatePrev() {
+			prev.classList.add("prev");
+			setTimeout(() => {
+				prev.classList.remove("prev");
+			}, 900);
+		}
 
 		window.addEventListener("blur", () => {
 			updateMediaSession();
@@ -361,8 +407,13 @@
 		    toNext();
 		});
 
+		prev.addEventListener("click", async () => {
+		  toPrev();
+		});
+
 		async function toNext() {
 			if (isPreparing) { refuse(next); return; }
+			animateNext();
   			isPreparing = true;
 			
 			// 1. Заглушить всё
@@ -396,12 +447,9 @@
 			isPreparing = false;
 		}
 
-		prev.addEventListener("click", async () => {
-		  toPrev();
-		});
-
 		async function toPrev() {
 			if (PSID === null || isPreparing) { refuse(prev); return; }
+			animatePrev();
    			isPreparing = true;
 			
 			// 1. Заглушить всё
