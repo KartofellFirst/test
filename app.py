@@ -64,7 +64,7 @@ def file_exists(filename):
     return os.path.isfile(filepath)
 
 def delete_file(filename):
-    id = int(filename.replace(".mp3", ""))
+    id = int(os.path.basename(filename).replace(".mp3", ""))  
     if id in still_needed_ids:
         still_needed_ids.discard(id)
         print(f"[INFO] файл {filename} всё ещё нужен — не удаляем")
