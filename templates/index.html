@@ -402,12 +402,15 @@
 		}
 
 		function getNextTrackId() {
-			let index = parseInt(Math.random() * 5)
-			while (index in TrackList) {
-				index = parseInt(Math.random() * 5)
-			}
-			return index;
+		    const allIndexes = [0, 1, 2, 3, 4];
+		    const available = allIndexes.filter(i => !TrackList.includes(i));
+		    
+		    if (available.length === 0) return 0; // все треки уже использованы
+		    
+		    const randomIndex = Math.floor(Math.random() * available.length);
+		    return available[randomIndex];
 		}
+
 		
 		function updateMediaSession() {
 			if ("mediaSession" in navigator) {
