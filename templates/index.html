@@ -216,7 +216,7 @@
 			animation: next .9s ease;
 		} 
 
-		#prev.next {
+		#prev.prev {
 			animation: prev .9s ease;
 		}
 
@@ -269,7 +269,7 @@
             <div id="btn-container"><button class="side" id="prev" ontouchstart></button><button id="spawn" ontouchstart class="inactive"><span id="pp-label">preparing...</span></button><button class="side" id="next" ontouchstart></button></div>
             <div class="track-info"><span class="artist"></span> - <span class="title"></span></div>
         </div>
-        <div id="player"><audio id="audio"></audio><audio id="audio-next"></audio><audio id="audio-prev"></audio></div>
+        <div id="player"><audio id="audio" onended="toNext()"></audio><audio id="audio-next" onended="toNext()"></audio><audio id="audio-prev" onended="toNext()"></audio></div>
         <span id="monitor"></span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
@@ -317,6 +317,8 @@
 		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
 
 		async function Prepare(audioElement, trackId) {
+			if (!trackId) { Show("Track ID is missing — something broke."); return; }
+			
 			function waitForCanplaythrough(audio) {
 				return new Promise((resolve, reject) => {
 					const timeout = setTimeout(() => {
