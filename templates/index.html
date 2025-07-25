@@ -265,12 +265,11 @@
 
     <main>
         <div style="display: flex;flex-direction: column;align-items: center;">
-			
             <div id="btn-container"><button class="side" id="prev" ontouchstart></button><button id="spawn" ontouchstart class="inactive"><span id="pp-label">preparing...</span></button><button class="side" id="next" ontouchstart></button></div>
             <div class="track-info"><span class="artist"></span> - <span class="title"></span></div>
         </div>
         <div id="player"><audio id="audio" onended="toNext()"></audio><audio id="audio-next" onended="toNext()"></audio><audio id="audio-prev" onended="toNext()"></audio></div>
-        <span id="monitor"></span>
+        <span id="monitor">0.0</span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
     <script>
@@ -350,6 +349,14 @@
 				audioElement.dataset.picture = "https://test.zhmikh.ru/static/fill.jpg";
 				audioElement.dataset.collection = "NT collection";
 				audioElement.load();
+
+				// Обновим данные (если это главный трек)
+				if (audioElement.id === "audio") {
+					document.querySelector(".title").textContent = data.data[2];
+					document.querySelector(".artist").textContent = data.data[3];
+				}
+
+				requestIdleCallback(Monitor); // безболезненный
 				
 				// 2. Ждём полной готовности
 				await new Promise(resolve => {
@@ -369,11 +376,7 @@
 					body: JSON.stringify({ filename: data.filename })
 				});
 				
-				// 4. Обновим данные (если это главный трек)
-				if (audioElement.id === "audio") {
-					document.querySelector(".title").textContent = data.data[2];
-					document.querySelector(".artist").textContent = data.data[3];
-				}
+				requestIdleCallback(Monitor); // еще один безболезненный
 			} catch (e) {
 				console.error("Prepare error:", e);
 				Show("Error loading track.");
@@ -484,13 +487,9 @@
 		}
 
 		function getNextTrackId() {
-		    const allIndexes = [0, 1, 2, 3, 4];
-		    const available = allIndexes.filter(i => !TrackList.includes(i));
-		    
-		    if (available.length === 0) return 0; // все треки уже использованы
-		    
-		    const randomIndex = Math.floor(Math.random() * available.length);
-		    return available[randomIndex];
+			let x = Math.round(Math.random() * 5)
+			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 5)
+		    return x
 		}
 
 		
