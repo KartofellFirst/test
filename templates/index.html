@@ -418,6 +418,7 @@
 
 		async function toNext() {
 			if (isPreparing) { refuse(next); return; }
+			ImitatePlay();
 			animateNext();
   			isPreparing = true;
 			
@@ -454,6 +455,7 @@
 
 		async function toPrev() {
 			if (PSID === null || isPreparing) { refuse(prev); return; }
+			ImitatePlay();
 			animatePrev();
    			isPreparing = true;
 			
