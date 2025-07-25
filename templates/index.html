@@ -244,11 +244,13 @@
         let BLM = "null";
         let SID = getNextTrackId();
         let NSID = getNextTrackId();
-        let PSID = 0;
+        let PSID = null;
         let PLAY = false;
 		let CACHED = false;
 		let MSA = false;
 		let IFT = true;
+		let TrackList = [];
+		let CI = 0;
 
         Show("Hello, my little client. What whould you ask?", 30)
 
@@ -327,32 +329,42 @@
 		  }
 		}
 
+		window.addEventListener("blur", () => {
+			updateMediaSession();
+		})
+
 		next.addEventListener("click", async () => {
 		  toNext();
 		});
 
 		function toNext() {
 			// 1. Заглушить всё
-		  document.querySelectorAll("audio").forEach(a => {
-		    a.pause();
-		    a.currentTime = 0;
-		  });
-		
-		  // 2. Запустить следующий трек
-		  const nextPlayer = document.getElementById("audio-next");
-		  nextPlayer.play();
-		
-		  // 3. Переименовать элементы
-		  const prevPlayer = document.getElementById("audio-prev");
-		  const currentPlayer = document.getElementById("audio");
-		
-		  prevPlayer.id = "audio-next";  // он станет новым next
-		  currentPlayer.id = "audio-prev"; // он станет prev
-		  nextPlayer.id = "audio"; // он становится главным
-		
-		  // 4. Начать подготовку следующего трека
-		  const nextTrackId = getNextTrackId(); // ← твоя логика выбора
-		  Prepare(document.getElementById("audio-next"), nextTrackId);
+			document.querySelectorAll("audio").forEach(a => {
+				a.pause();
+				a.currentTime = 0;
+			});
+			
+			// 2. Запустить следующий трек
+			const nextPlayer = document.getElementById("audio-next");
+			nextPlayer.play();
+			
+			// 3. Переименовать элементы
+			const prevPlayer = document.getElementById("audio-prev");
+			const currentPlayer = document.getElementById("audio");
+			
+			prevPlayer.id = "audio-next";  // он станет новым next
+			currentPlayer.id = "audio-prev"; // он станет prev
+			nextPlayer.id = "audio"; // он становится главным
+			
+			// 4. Начать подготовку следующего трека
+			let nextTrackId;
+			if (TrackList.length == CI - 1) { nextTrackId = getNextTrackId(); TrackList = [...TrackList, SID]; } // если до этого не перематывали назад - следующий подбираем по алгоритмам
+			else { CI++; nextTrackId = TrackList[CI]; } // если перематывали назад, следующий остается тем что и был
+			PSID = SID;
+			SID = NSID;
+			NSID = nextTrackId; 
+			if (TrackList.length >= 50) { TrackList.splice(0, 1); CI--; } // removing first one and moving index
+			Prepare(document.getElementById("audio-next"), nextTrackId);
 		}
 
 		prev.addEventListener("click", async () => {
@@ -360,34 +372,36 @@
 		});
 
 		function toPrev() {
+			if (PSID === null) return
+			
 			// 1. Заглушить всё
-		  document.querySelectorAll("audio").forEach(a => {
-		    a.pause();
-		    a.currentTime = 0;
-		  });
-		
-		  // 2. Запустить предыдущий трек
-		  const prevPlayer = document.getElementById("audio-prev");
-		  prevPlayer.play();
-		
-		  // 3. Переименовать элементы
-		  const nextPlayer = document.getElementById("audio-next");
-		  const currentPlayer = document.getElementById("audio");
-		
-		  prevPlayer.id = "audio";  // он станет новым главным
-		  currentPlayer.id = "audio-next"; // он станет next
-		  nextPlayer.id = "audio-prev"; // он становится prev 
-		
-		  // 4. Начать подготовку предыдущего трека
-		  const prevTrackId = getPreviousTrackId(); // ← твоя логика выбора
-		  Prepare(document.getElementById("audio-prev"), prevTrackId);
+			document.querySelectorAll("audio").forEach(a => {
+				a.pause();
+				a.currentTime = 0;
+			});
+			
+			// 2. Запустить предыдущий трек
+			const prevPlayer = document.getElementById("audio-prev");
+			prevPlayer.play();
+			
+			// 3. Переименовать элементы
+			const nextPlayer = document.getElementById("audio-next");
+			const currentPlayer = document.getElementById("audio");
+			
+			prevPlayer.id = "audio";  // он станет новым главным
+			currentPlayer.id = "audio-next"; // он станет next
+			nextPlayer.id = "audio-prev"; // он становится prev 
+			
+			// 4. Начать подготовку предыдущего трека
+			const prevTrackId = PSID; 
+			if (CI - 1 >= 0) { CI--; PSID = TrackList[CI]; } // Если есть куда отступать дальше, отматываем назад
+			else { PSID = null; } // если варианта мотать назад больше нет, запрещаем дальшейшую перемотку назад
+			NSID = SID;
+			SID = prevTrackId;
+			Prepare(document.getElementById("audio-prev"), prevTrackId);
 		}
 
 		function getNextTrackId() {
-			return 0;
-		}
-
-		function getPreviousTrackId() {
 			return 0;
 		}
 		
