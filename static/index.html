@@ -207,6 +207,40 @@
 		    margin-bottom: -10px;
 		    margin-top: 10px;
 		}
+
+		.refuse {
+			animation: refuse 0.4s ease;
+		}
+		
+		#next.next {
+			animation: next .9s ease;
+		} 
+
+		#prev.prev {
+			animation: prev .9s ease;
+		}
+
+		@keyframes refuse {
+			0%   { transform: translateX(0); }
+			25%  { transform: translateX(-6px); }
+			50%  { transform: translateX(6px); }
+			75%  { transform: translateX(-3px); }
+			100% { transform: translateX(0); }
+		}
+		
+		@keyframes next {
+			0% { transform: translateX(0); opacity: 1; }
+			75% { transform: translateX(20px); opacity: 0; }
+			76% { transform: translateX(0); opacity: 0; }
+			100% { opacity: 1; }
+		}
+
+		@keyframes prev {
+			0% { transform: translateX(0); opacity: 1; }
+			75% { transform: translateX(-20px); opacity: 0; }
+			76% { transform: translateX(0); opacity: 0; }
+			100% { opacity: 1; }
+		}
     </style>
 </head>
 <body>
@@ -234,25 +268,30 @@
             <div id="btn-container"><button class="side" id="prev" ontouchstart></button><button id="spawn" ontouchstart class="inactive"><span id="pp-label">preparing...</span></button><button class="side" id="next" ontouchstart></button></div>
             <div class="track-info"><span class="artist"></span> - <span class="title"></span></div>
         </div>
-        <div id="player"><audio id="audio" controls></audio><audio id="audio-next"></audio><audio id="audio-prev"></audio></div>
-        <span id="monitor"></span>
+        <div id="player"><audio id="audio" onended="toNext()"></audio><audio id="audio-next" onended="toNext()"></audio><audio id="audio-prev" onended="toNext()"></audio></div>
+        <span id="monitor">0.0</span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
     <script>
         let ULM = "null";
         let BLM = "null";
-        let SID = getNextTrackId();
-        let NSID = getNextTrackId();
-        let PSID = 0;
+        let SID = null;
+        let NSID = null;
+        let PSID = null;
         let PLAY = false;
 		let CACHED = false;
 		let MSA = false;
+		let isPreparing = false;
 		let IFT = true;
+		let TrackList = [];
+		let CI = 1;
 
-        Show("Hello, my little client. What whould you ask?", 30)
+		Show("Hello, my little client. What whould you ask?", 30)
+
+		SID = getNextTrackId();
+		NSID = getNextTrackId();
 
         const SBTN = document.getElementById("spawn");
-		// const pp = document.getElementById("play-pause"); 
 		const label = document.getElementById("pp-label"); 
 		const next = document.getElementById("next"); 
 		const prev = document.getElementById("prev");
@@ -270,131 +309,197 @@
 			const audio = document.getElementById("audio");
 			SBTN.classList.add("activated"); prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px"; // decorations
             if (!PLAY) { ImitatePlay(); audio.play(); updateMediaSession(); if (audio.paused) ImitatePause();
-			} else { ImitatePause(); audio.pause(); } 
+			} else { ImitatePause(); audio.pause(); document.getElementById("audio-next").pause(); document.getElementById("audio-prev").pause(); } 
         });
 
 		function ImitatePause() { PLAY = false; label.textContent = "play"; }
 		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
 
 		async function Prepare(audioElement, trackId) {
-		  try {
-		    const res = await fetch("https://test.zhmikh.ru/play", {
-		      method: "POST",
-		      headers: { "Content-Type": "application/json" },
-		      body: JSON.stringify({ id: trackId })
-		    });
-		    const data = await res.json();
-		
-		    if (!data.success) throw new Error("Failed to fetch track");
-		
-		    // 1. Обновляем src и загружаем
-		    audioElement.src = "https://test.zhmikh.ru/" + data.filename;
-			audioElement.dataset.title = data.data[2];
-			audioElement.dataset.artist = data.data[3];
-			audioElement.dataset.picture = "https://test.zhmikh.ru/static/fill.jpg";
-			audioElement.dataset.collection = "NT collection";
-		    audioElement.load();
+			if (!trackId) { Show("Track ID is missing — something broke."); return; }
+			
+			function waitForCanplaythrough(audio) {
+				return new Promise((resolve, reject) => {
+					const timeout = setTimeout(() => {
+						Show("[ERROR] Please, check your internet connection, its too slow... This process usually takes 2-3 seconds on old devises, you take more than 10", 50);
+						reject(new Error("canplaythrough timeout"));
+					}, 10000); // 10 секунд
+					
+					audio.addEventListener("canplaythrough", () => {
+						clearTimeout(timeout);
+						resolve();
+					}, { once: true });
+				});
+			}
 
-			audioElement.addEventListener("ended", toNext())
-		
-		    // 2. Ждём полной готовности
-			await new Promise(resolve => {
-			    audioElement.addEventListener("loadedmetadata", resolve, { once: true });
-			});
+			try {
+				const res = await fetch("https://test.zhmikh.ru/play", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ id: trackId })
+				});
+				const data = await res.json();
+				
+				if (!data.success) throw new Error("Failed to fetch track");
+				
+				// 1. Обновляем src и загружаем
+				audioElement.src = "https://test.zhmikh.ru/" + data.filename;
+				audioElement.dataset.title = data.data[2];
+				audioElement.dataset.artist = data.data[3];
+				audioElement.dataset.picture = "https://test.zhmikh.ru/static/fill.jpg";
+				audioElement.dataset.collection = "NT collection";
+				audioElement.load();
 
-			if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
-			console.log("loadedmetadata")
+				// Обновим данные (если это главный трек)
+				if (audioElement.id === "audio") {
+					document.querySelector(".title").textContent = data.data[2];
+					document.querySelector(".artist").textContent = data.data[3];
+				}
 
-		    await new Promise(resolve => {
-		        audioElement.addEventListener("canplaythrough", resolve, { once: true });
-		    });
-			console.log("canplaythrough")
-		
-		    // 3. Кешировано — можно удалить с сервера
-		    await fetch("https://test.zhmikh.ru/delete", {
-		      method: "POST",
-		      headers: { "Content-Type": "application/json" },
-		      body: JSON.stringify({ filename: data.filename })
-		    });
-		
-		    // 4. Обновим данные (если это главный трек)
-		    if (audioElement.id === "audio") {
-			  document.querySelector(".title").textContent = data.data[2];
-			  document.querySelector(".artist").textContent = data.data[3];
-		    }
-		  } catch (e) {
-		    console.error("Prepare error:", e);
-		    Show("Error loading track.");
-		  }
+				requestIdleCallback(Monitor); // безболезненный
+				
+				// 2. Ждём полной готовности
+				await new Promise(resolve => {
+					audioElement.addEventListener("canplay", resolve, { once: true });
+				});
+				
+				if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
+				console.log("canplay")
+				
+				await waitForCanplaythrough(audioElement);
+				console.log("canplaythrough")
+				
+				// 3. Кешировано — можно удалить с сервера
+				await fetch("https://test.zhmikh.ru/delete", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ filename: data.filename })
+				});
+				
+				requestIdleCallback(Monitor); // еще один безболезненный
+			} catch (e) {
+				console.error("Prepare error:", e);
+				Show("Error loading track.");
+			}
 		}
+
+		async function refuse(el) {
+			el.classList.add("refuse");
+			setTimeout(() => {
+				el.classList.remove("refuse");
+			}, 400); 
+		}
+
+		async function animateNext() {
+			next.classList.add("next");
+			setTimeout(() => {
+				next.classList.remove("next");
+			}, 900);
+		}
+
+		async function animatePrev() {
+			prev.classList.add("prev");
+			setTimeout(() => {
+				prev.classList.remove("prev");
+			}, 900);
+		}
+
+		window.addEventListener("blur", () => {
+			updateMediaSession();
+		})
 
 		next.addEventListener("click", async () => {
-		  toNext();
+		    toNext();
 		});
-
-		function toNext() {
-			// 1. Заглушить всё
-		  document.querySelectorAll("audio").forEach(a => {
-		    a.pause();
-		    a.currentTime = 0;
-		  });
-		
-		  // 2. Запустить следующий трек
-		  const nextPlayer = document.getElementById("audio-next");
-		  nextPlayer.play();
-		
-		  // 3. Переименовать элементы
-		  const prevPlayer = document.getElementById("audio-prev");
-		  const currentPlayer = document.getElementById("audio");
-		
-		  prevPlayer.id = "audio-next";  // он станет новым next
-		  currentPlayer.id = "audio-prev"; // он станет prev
-		  nextPlayer.id = "audio"; // он становится главным
-		
-		  // 4. Начать подготовку следующего трека
-		  const nextTrackId = getNextTrackId(); // ← твоя логика выбора
-		  Prepare(document.getElementById("audio-next"), nextTrackId);
-		}
 
 		prev.addEventListener("click", async () => {
 		  toPrev();
 		});
 
-		function toPrev() {
+		async function toNext() {
+			if (isPreparing) { refuse(next); return; }
+			ImitatePlay();
+			animateNext();
+  			isPreparing = true;
+			
 			// 1. Заглушить всё
-		  document.querySelectorAll("audio").forEach(a => {
-		    a.pause();
-		    a.currentTime = 0;
-		  });
-		
-		  // 2. Запустить предыдущий трек
-		  const prevPlayer = document.getElementById("audio-prev");
-		  prevPlayer.play();
-		
-		  // 3. Переименовать элементы
-		  const nextPlayer = document.getElementById("audio-next");
-		  const currentPlayer = document.getElementById("audio");
-		
-		  prevPlayer.id = "audio";  // он станет новым главным
-		  currentPlayer.id = "audio-next"; // он станет next
-		  nextPlayer.id = "audio-prev"; // он становится prev 
-		
-		  // 4. Начать подготовку предыдущего трека
-		  const prevTrackId = getPreviousTrackId(); // ← твоя логика выбора
-		  Prepare(document.getElementById("audio-prev"), prevTrackId);
+			document.querySelectorAll("audio").forEach(a => {
+				a.pause();
+				a.currentTime = 0;
+			});
+			
+			// 2. Запустить следующий трек
+			const nextPlayer = document.getElementById("audio-next");
+			nextPlayer.play();
+			
+			// 3. Переименовать элементы
+			const prevPlayer = document.getElementById("audio-prev");
+			const currentPlayer = document.getElementById("audio");
+			
+			prevPlayer.id = "audio-next";  // он станет новым next
+			currentPlayer.id = "audio-prev"; // он станет prev
+			nextPlayer.id = "audio"; // он становится главным
+			
+			// 4. Начать подготовку следующего трека
+			let nextTrackId;
+			if (TrackList.length == CI - 1) { nextTrackId = getNextTrackId(); TrackList = [...TrackList, SID]; } // если до этого не перематывали назад - следующий подбираем по алгоритмам
+			else { CI++; nextTrackId = TrackList[CI]; } // если перематывали назад, следующий остается тем что и был
+			PSID = SID;
+			SID = NSID;
+			NSID = nextTrackId; 
+			if (TrackList.length >= 50) { TrackList.splice(0, 1); CI--; } // removing first one and moving index
+			updateMediaSession();
+			await Prepare(document.getElementById("audio-next"), nextTrackId);
+			isPreparing = false;
+		}
+
+		async function toPrev() {
+			if (PSID === null || isPreparing) { refuse(prev); return; }
+			ImitatePlay();
+			animatePrev();
+   			isPreparing = true;
+			
+			// 1. Заглушить всё
+			document.querySelectorAll("audio").forEach(a => {
+				a.pause();
+				a.currentTime = 0;
+			});
+			
+			// 2. Запустить предыдущий трек
+			const prevPlayer = document.getElementById("audio-prev");
+			prevPlayer.play();
+			
+			// 3. Переименовать элементы
+			const nextPlayer = document.getElementById("audio-next");
+			const currentPlayer = document.getElementById("audio");
+			
+			prevPlayer.id = "audio";  // он станет новым главным
+			currentPlayer.id = "audio-next"; // он станет next
+			nextPlayer.id = "audio-prev"; // он становится prev 
+			
+			// 4. Начать подготовку предыдущего трека
+			const prevTrackId = PSID; 
+			if (CI - 1 >= 0) { CI--; PSID = TrackList[CI]; } // Если есть куда отступать дальше, отматываем назад
+			else { PSID = null; } // если варианта мотать назад больше нет, запрещаем дальшейшую перемотку назад
+			NSID = SID;
+			SID = prevTrackId;
+			updateMediaSession();
+			await Prepare(document.getElementById("audio-prev"), prevTrackId);
+  			isPreparing = false;
 		}
 
 		function getNextTrackId() {
-			return 0;
+			let x = Math.round(Math.random() * 5)
+			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 5)
+		    return x
 		}
 
-		function getPreviousTrackId() {
-			return 0;
-		}
 		
 		function updateMediaSession() {
+			const data = document.getElementById("audio").dataset;
+			document.querySelector(".title").textContent = data.title;
+			document.querySelector(".artist").textContent = data.artist;
 			if ("mediaSession" in navigator) {
-				const data = document.getElementById("audio").dataset;
 				navigator.mediaSession.metadata = new MediaMetadata({
 					title: data.title || "example title",
 					artist: data.artist || "unknown artist",
