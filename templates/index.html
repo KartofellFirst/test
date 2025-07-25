@@ -207,6 +207,19 @@
 		    margin-bottom: -10px;
 		    margin-top: 10px;
 		}
+
+		@keyframes refuse {
+			0%   { transform: translateX(0); }
+			25%  { transform: translateX(-6px); }
+			50%  { transform: translateX(6px); }
+			75%  { transform: translateX(-3px); }
+			100% { transform: translateX(0); }
+		}
+		
+		.refuse {
+			animation: refuse 0.4s ease;
+		}
+
     </style>
 </head>
 <body>
@@ -251,7 +264,7 @@
 		let isPreparing = false;
 		let IFT = true;
 		let TrackList = [];
-		let CI = 0;
+		let CI = 1;
 
 		Show("Hello, my little client. What whould you ask?", 30)
 
@@ -333,6 +346,14 @@
 		  }
 		}
 
+		async function refuse(el) {
+			el.classList.add("refuse");
+			setTimeout(() => {
+				el.classList.remove("refuse");
+			}, 400); 
+		}
+
+
 		window.addEventListener("blur", () => {
 			updateMediaSession();
 		})
@@ -342,7 +363,7 @@
 		});
 
 		async function toNext() {
-			if (isPreparing) return;
+			if (isPreparing) { refuse(next); return; }
   			isPreparing = true;
 			
 			// 1. Заглушить всё
@@ -381,8 +402,8 @@
 		});
 
 		async function toPrev() {
-			if (PSID === null || isPreparing) return;
-  			isPreparing = true;
+			if (PSID === null || isPreparing) { refuse(prev); return; }
+   			isPreparing = true;
 			
 			// 1. Заглушить всё
 			document.querySelectorAll("audio").forEach(a => {
