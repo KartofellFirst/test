@@ -248,7 +248,7 @@
             <div id="btn-container"><button class="side" id="prev" ontouchstart></button><button id="spawn" ontouchstart class="inactive"><span id="pp-label">preparing...</span></button><button class="side" id="next" ontouchstart></button></div>
             <div class="track-info"><span class="artist"></span> - <span class="title"></span></div>
         </div>
-        <div id="player"><audio id="audio" controls autoplay></audio><audio id="audio-next"></audio><audio id="audio-prev"></audio></div>
+        <div id="player"><audio id="audio"></audio><audio id="audio-next"></audio><audio id="audio-prev"></audio></div>
         <span id="monitor"></span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
@@ -272,7 +272,6 @@
 		NSID = getNextTrackId();
 
         const SBTN = document.getElementById("spawn");
-		// const pp = document.getElementById("play-pause"); 
 		const label = document.getElementById("pp-label"); 
 		const next = document.getElementById("next"); 
 		const prev = document.getElementById("prev");
@@ -446,8 +445,10 @@
 
 		
 		function updateMediaSession() {
+			const data = document.getElementById("audio").dataset;
+			document.querySelector(".title").textContent = data.title;
+			document.querySelector(".artist").textContent = data.artist;
 			if ("mediaSession" in navigator) {
-				const data = document.getElementById("audio").dataset;
 				navigator.mediaSession.metadata = new MediaMetadata({
 					title: data.title || "example title",
 					artist: data.artist || "unknown artist",
