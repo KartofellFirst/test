@@ -5,9 +5,6 @@ import time
 import csv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-from bs4 import BeautifulSoup
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, APIC
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id="fd90af2b1c1447669656004c905a12c4",
@@ -18,7 +15,9 @@ app = Flask(__name__)
 spawntime = {}
 MAX_FOLDER_SIZE = 400 * 1024 * 1024  # 400MB
 MAX_FILE_AGE = 900  # 15 минут
+TRACKS_FILE = 'tracks.json'
 DESCRIPTION = "Your next response will be on behalf of the server of the site you are on. It shouldn't be big, it shouldn't have markup, and the answer should look like you're a real person. By the nature of your response, I expect you to be arrogant and self-important, and you will be polite but courteous, because you are working right now (but dont put it in every message please). Don't let the others have fun with you, you're more important than them! Don't get out of character, don't you dare say that you're Gemini, you can only write that you're a AI created by Google AI. A little bit about the site (don't throw it at user without he ask about it first): NT is a streaming service with music, its code is open and can be easily found on GitHub. The peculiarity of the service is that it does not store tracks at home, but only streams them, downloading them from other sources and subsequently deleting them as soon as they are saved to the client's cache. Our approach allows us to store terabytes of tracks without exceeding the 512 MB limit of our free VPS hosting. Now we're a new platform and we don't have terabytes of music yet, but users can import their own tracks if they want... "
+still_needed_ids = set()
 
 def clean_old_files():
     now = time.time()
@@ -29,7 +28,14 @@ def clean_old_files():
 def download_file(url, filename):
     folder = os.path.join("static", "din")
     os.makedirs(folder, exist_ok=True)
-    filepath = os.path.join(folder, filename)
+    filepath = os.path.join("static", "din", filename)
+    file_id = int(filename.replace(".mp3", ""))
+
+    # 🔍 Проверка — если файл уже есть
+    if os.path.isfile(filepath):
+        still_needed_ids.add(file_id)
+        print(f"[INFO] Файл {filename} уже существует — даём вторую жизнь")
+        return True
 
     clean_old_files()
     if get_folder_size(folder) > MAX_FOLDER_SIZE:
@@ -58,6 +64,12 @@ def file_exists(filename):
     return os.path.isfile(filepath)
 
 def delete_file(filename):
+    id = int(filename.replace(".mp3", ""))
+    if id in still_needed_ids:
+        still_needed_ids.discard(id)
+        print(f"[INFO] файл {filename} всё ещё нужен — не удаляем")
+        return True
+    
     filepath = os.path.join("static", "din", filename)
     if os.path.isfile(filepath):
         os.remove(filepath)
@@ -74,27 +86,44 @@ def get_folder_size(path="static/din"):
     return total_size  # в байтах
 
 def get_track_data(sought):
-    with open('tracks.csv', mode='r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if str(row[0]) == str(sought):
-                return row
-        print(f"[REPORT] >>>>>>>>>>>>>> not found {sought}")
+    if not os.path.exists(TRACKS_FILE):
         return None
+    with open(TRACKS_FILE, 'r', encoding='utf-8') as file:
+        try:
+            data = json.load(file)
+        except json.JSONDecodeError:
+            return None
+    for entry in data:
+        if str(entry[0]) == str(sought):
+            return entry
+    print(f"[REPORT] >>>>>>>>>>>>>> not found {sought}")
+    return None
 
 def get_free_index():
-    with open('tracks.csv', mode='r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        row_count = sum(1 for row in reader)
-        return row_count
+    if not os.path.exists(TRACKS_FILE):
+        return 0
+    with open(TRACKS_FILE, 'r', encoding='utf-8') as file:
+        try:
+            data = json.load(file)
+        except json.JSONDecodeError:
+            return 0
+    return len(data)
 
-def write_new_row(data):
-    row_count = get_free_index()
-    data = [row_count] + data
-    with open('tracks.csv', mode='a', encoding='utf-8') as file: 
-        writer = csv.writer(file)
-        writer.writerows(data)
-        return row_count
+def write_new_row(row_data):
+    index = get_free_index()
+    new_entry = [index] + row_data
+    if os.path.exists(TRACKS_FILE):
+        with open(TRACKS_FILE, 'r', encoding='utf-8') as file:
+            try:
+                data = json.load(file)
+            except json.JSONDecodeError:
+                data = []
+    else:
+        data = []
+    data.append(new_entry)
+    with open(TRACKS_FILE, 'w', encoding='utf-8') as file:
+        json.dump(data, file, ensure_ascii=False, indent=2)
+    return index
 
 with app.app_context():
     folder = os.path.join("static", "din")
