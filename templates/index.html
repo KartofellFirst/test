@@ -242,8 +242,8 @@
     <script>
         let ULM = "null";
         let BLM = "null";
-        let SID = getNextTrackId();
-        let NSID = getNextTrackId();
+        let SID = null;
+        let NSID = null;
         let PSID = null;
         let PLAY = false;
 		let CACHED = false;
@@ -251,6 +251,9 @@
 		let IFT = true;
 		let TrackList = [];
 		let CI = 0;
+
+		SID = getNextTrackId();
+		NSID = getNextTrackId();
 
         Show("Hello, my little client. What whould you ask?", 30)
 
