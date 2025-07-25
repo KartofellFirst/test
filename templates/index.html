@@ -402,7 +402,11 @@
 		}
 
 		function getNextTrackId() {
-			return 0;
+			let index = parseInt(Math.random() * 5)
+			while (index in TrackList) {
+				index = parseInt(Math.random() * 5)
+			}
+			return index;
 		}
 		
 		function updateMediaSession() {
