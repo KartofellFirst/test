@@ -248,14 +248,15 @@
         let PLAY = false;
 		let CACHED = false;
 		let MSA = false;
+		let isPreparing = false;
 		let IFT = true;
 		let TrackList = [];
 		let CI = 0;
 
+		Show("Hello, my little client. What whould you ask?", 30)
+
 		SID = getNextTrackId();
 		NSID = getNextTrackId();
-
-        Show("Hello, my little client. What whould you ask?", 30)
 
         const SBTN = document.getElementById("spawn");
 		// const pp = document.getElementById("play-pause"); 
@@ -276,7 +277,7 @@
 			const audio = document.getElementById("audio");
 			SBTN.classList.add("activated"); prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px"; // decorations
             if (!PLAY) { ImitatePlay(); audio.play(); updateMediaSession(); if (audio.paused) ImitatePause();
-			} else { ImitatePause(); audio.pause(); } 
+			} else { ImitatePause(); audio.pause(); document.getElementById("audio-next").pause(); document.getElementById("audio-prev").pause(); } 
         });
 
 		function ImitatePause() { PLAY = false; label.textContent = "play"; }
@@ -303,11 +304,11 @@
 		
 		    // 2. Ждём полной готовности
 			await new Promise(resolve => {
-			    audioElement.addEventListener("loadedmetadata", resolve, { once: true });
+			    audioElement.addEventListener("canplay", resolve, { once: true });
 			});
 
 			if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
-			console.log("loadedmetadata")
+			console.log("canplay")
 
 		    await new Promise(resolve => {
 		        audioElement.addEventListener("canplaythrough", resolve, { once: true });
@@ -337,10 +338,13 @@
 		})
 
 		next.addEventListener("click", async () => {
-		  toNext();
+		    toNext();
 		});
 
-		function toNext() {
+		async function toNext() {
+			if (isPreparing) return;
+  			isPreparing = true;
+			
 			// 1. Заглушить всё
 			document.querySelectorAll("audio").forEach(a => {
 				a.pause();
@@ -367,15 +371,18 @@
 			SID = NSID;
 			NSID = nextTrackId; 
 			if (TrackList.length >= 50) { TrackList.splice(0, 1); CI--; } // removing first one and moving index
-			Prepare(document.getElementById("audio-next"), nextTrackId);
+			updateMediaSession();
+			await Prepare(document.getElementById("audio-next"), nextTrackId);
+			isPreparing = false;
 		}
 
 		prev.addEventListener("click", async () => {
 		  toPrev();
 		});
 
-		function toPrev() {
-			if (PSID === null) return
+		async function toPrev() {
+			if (PSID === null || isPreparing) return;
+  			isPreparing = true;
 			
 			// 1. Заглушить всё
 			document.querySelectorAll("audio").forEach(a => {
@@ -401,7 +408,9 @@
 			else { PSID = null; } // если варианта мотать назад больше нет, запрещаем дальшейшую перемотку назад
 			NSID = SID;
 			SID = prevTrackId;
-			Prepare(document.getElementById("audio-prev"), prevTrackId);
+			updateMediaSession();
+			await Prepare(document.getElementById("audio-prev"), prevTrackId);
+  			isPreparing = false;
 		}
 
 		function getNextTrackId() {
