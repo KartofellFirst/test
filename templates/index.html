@@ -360,7 +360,7 @@
 					document.querySelector(".artist").textContent = data.data[3];
 				}
 
-				requestIdleCallback(Monitor); // безболезненный
+				requestAnimationFrame(() => Monitor()); // безболезненный
 				
 				// 2. Ждём частичной готовности
 				await new Promise(resolve => {
@@ -381,7 +381,7 @@
 					body: JSON.stringify({ filename: data.filename })
 				});
 				
-				requestIdleCallback(Monitor); // еще один безболезненный
+				requestAnimationFrame(() => Monitor()); // еще один безболезненный
 			} catch (e) {
 				console.error("Prepare error:", e);
 				isPreparing = false;
