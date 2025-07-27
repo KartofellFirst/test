@@ -16,8 +16,8 @@ self.addEventListener("fetch", (e) => {
   if (e.request.url.includes("/static/din/")) return;
   e.respondWith(
     caches.match(e.request).then((res) => {
-      return res || fetch(e.request).catch((err) =>
-        caches.match("/static/fallback.html");
+      return res || fetch(e.request).catch(() =>
+        caches.match("/static/fallback.html")
       );
     })
   );
