@@ -6,7 +6,7 @@
 	<link href="https://fonts.googleapis.com/css2?family=Oregano:ital@0;1&display=swap" rel="stylesheet">
 	<link rel="manifest" href="static/manifest.json"> 
 	<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js")</script>
-    <title>Аудио загрузка</title>
+    <title>NT - home</title>
     <style>
         * {
 			margin: 0;
@@ -497,8 +497,8 @@
 		}
 
 		function getNextTrackId() {
-			let x = Math.round(Math.random() * 5) - 1
-			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 5) - 1
+			let x = Math.round(Math.random() * 4)
+			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 4)
 		    return x
 		}
 
