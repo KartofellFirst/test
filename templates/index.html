@@ -270,7 +270,7 @@
             <div id="btn-container"><button class="side" id="prev" ontouchstart></button><button id="spawn" ontouchstart class="inactive"><span id="pp-label">preparing...</span></button><button class="side" id="next" ontouchstart></button></div>
             <div class="track-info"><span class="artist"></span> - <span class="title"></span></div>
         </div>
-        <div id="player"><audio id="audio" onended="toNext()"></audio><audio id="audio-next" onended="toNext()"></audio><audio id="audio-prev" onended="toNext()"></audio></div>
+        <div id="player"><audio id="audio" onended="toNext()" controls></audio><audio id="audio-next" onended="toNext()" controls></audio><audio id="audio-prev" onended="toNext()" controls></audio></div>
         <span id="monitor">0.0</span>
         <div class="screen-wrapper"><div id="screen"></div><input class="screen-input" onchange="Send(this.value);this.value=''"></div>
     </main>
