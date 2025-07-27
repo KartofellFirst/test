@@ -134,9 +134,6 @@
 		audio { /* Опять борьба с IOS */
 			position: absolute;
 			opacity: 0.01;
-			top: 0;
-			left: 0;
-			z-index: -99;
 			width: 1px;
   			height: 1px;
 		}
@@ -374,6 +371,11 @@
 				console.error("Prepare error:", e);
 				isPreparing = false;
 				Show(`Error loading track.[2] ${e}`);
+				fetch("https://test.zhmikh.ru/delete", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ filename: data.filename })
+				});
 			}
 
 			function waitForCanplaythrough(audio) {
