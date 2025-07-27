@@ -298,12 +298,10 @@
 		const artist = document.querySelector(".artist");
 		const title = document.querySelector(".title");
 
-		
 		Prepare(document.getElementById("audio"), SID).then(async () => {
 			await Prepare(document.getElementById("audio-next"), NSID);
 			Show("Next track just loaded", 30);
 		})
-		
 		
         SBTN.addEventListener("click", (event) => {
 			const audio = document.getElementById("audio");
@@ -323,7 +321,7 @@
 					const timeout = setTimeout(() => {
 						Show("[ERROR] Please, check your internet connection...", 50);
 						reject(new Error("canplaythrough timeout"));
-					}, 10000); // 10 секунд
+					}, 20000); // 20 секунд
 					
 					audio.addEventListener("canplaythrough", () => {
 						clearTimeout(timeout);
@@ -364,19 +362,19 @@
 
 				requestIdleCallback(Monitor); // безболезненный
 				
-				// 2. Ждём полной готовности
+				// 2. Ждём частичной готовности
 				await new Promise(resolve => {
 					audioElement.addEventListener("canplay", resolve, { once: true });
 				});
 				
 				if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
 				console.log("canplay")
-				
+
+				// 3. Кешировано — можно удалить с сервера
 				await waitForCanplaythrough(audioElement);
 				console.log("canplaythrough")
 				
-				// 3. Кешировано — можно удалить с сервера
-				await fetch("https://test.zhmikh.ru/delete", {
+				fetch("https://test.zhmikh.ru/delete", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ filename: data.filename })
@@ -385,6 +383,7 @@
 				requestIdleCallback(Monitor); // еще один безболезненный
 			} catch (e) {
 				console.error("Prepare error:", e);
+				isPreparing = false;
 				Show("Error loading track.");
 			}
 		}
@@ -426,9 +425,7 @@
 
 		async function toNext() {
 			if (isPreparing) { refuse(next); return; }
-			ImitatePlay();
 			animateNext();
-  			isPreparing = true;
 			
 			// 1. Заглушить всё
 			document.querySelectorAll("audio").forEach(a => {
@@ -463,9 +460,7 @@
 
 		async function toPrev() {
 			if (PSID === null || isPreparing) { refuse(prev); return; }
-			ImitatePlay();
 			animatePrev();
-   			isPreparing = true;
 			
 			// 1. Заглушить всё
 			document.querySelectorAll("audio").forEach(a => {
@@ -497,9 +492,9 @@
 		}
 
 		function getNextTrackId() {
-			let x = Math.round(Math.random() * 4)
-			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 4)
-		    return x
+			const AI = [0, 1, 2, 3, 4] // available index
+			const index = Math.floor(Math.random() * AI.length);
+  			return AI[index];
 		}
 
 		
