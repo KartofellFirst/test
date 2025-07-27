@@ -131,12 +131,14 @@
 			overflow: hidden;
         }
 
-		audio {
+		audio { /* Опять борьба с IOS */
 			position: absolute;
-			opacity: 0;
-			pointer-events: none;
+			opacity: 0.01;
 			top: 0;
 			left: 0;
+			z-index: -99;
+			width: 1px;
+  			height: 1px;
 		}
 
 		#btn-container {
@@ -298,17 +300,15 @@
 		const artist = document.querySelector(".artist");
 		const title = document.querySelector(".title");
 
-		
 		Prepare(document.getElementById("audio"), SID).then(async () => {
 			await Prepare(document.getElementById("audio-next"), NSID);
 			Show("Next track just loaded", 30);
 		})
 		
-		
         SBTN.addEventListener("click", (event) => {
 			const audio = document.getElementById("audio");
 			SBTN.classList.add("activated"); prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px"; // decorations
-            if (!PLAY) { ImitatePlay(); audio.play(); updateMediaSession(); if (audio.paused) ImitatePause();
+            if (!PLAY) { if (audio.readyState == 4) { audio.play() } else { Prepare(audio, SID).then(data => {audio.play(); alert("ressurected") }) }; ImitatePlay(); updateMediaSession(); if (audio.paused) ImitatePause();
 			} else { ImitatePause(); audio.pause(); document.getElementById("audio-next").pause(); document.getElementById("audio-prev").pause(); } 
         });
 
@@ -316,27 +316,13 @@
 		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
 
 		async function Prepare(audioElement, trackId) {
-			if (!trackId) {  isPreparing = false; Show("Track ID is missing — something broke."); return; }
-			
-			function waitForCanplaythrough(audio) {
-				return new Promise((resolve, reject) => {
-					const timeout = setTimeout(() => {
-						Show("[ERROR] Please, check your internet connection...", 50);
-						reject(new Error("canplaythrough timeout"));
-					}, 10000); // 10 секунд
-					
-					audio.addEventListener("canplaythrough", () => {
-						clearTimeout(timeout);
-						resolve();
-					}, { once: true });
-				});
-			}
-
 			// убеждаемся в трезвости своего ума
-			isPreparing = true;
 			audioElement.pause();
 			audioElement.src = ""; 
 			audioElement.load(); 
+			if (!trackId) {  isPreparing = false; Show("Track ID is missing — something broke."); return; }
+
+			isPreparing = true;
 
 			try {
 				const res = await fetch("https://test.zhmikh.ru/play", {
@@ -346,7 +332,7 @@
 				});
 				const data = await res.json();
 				
-				if (!data.success || !data.filename) { Show("Error loading track."); isPreparing = false; return; }
+				if (!data.success || !data.filename) { Show("Error loading track. [1]"); isPreparing = false; return; }
 				
 				// 1. Обновляем src и загружаем
 				audioElement.src = "https://test.zhmikh.ru/" + data.filename;
@@ -362,30 +348,46 @@
 					document.querySelector(".artist").textContent = data.data[3];
 				}
 
-				requestIdleCallback(Monitor); // безболезненный
+				requestAnimationFrame(() => Monitor()); // безболезненный
 				
-				// 2. Ждём полной готовности
+				// 2. Ждём частичной готовности
 				await new Promise(resolve => {
 					audioElement.addEventListener("canplay", resolve, { once: true });
 				});
 				
 				if (IFT) {SBTN.classList.remove("inactive"); label.textContent = "start stream"; Show("Your track is ready!", 30); IFT = false}
 				console.log("canplay")
-				
+				isPreparing = false;
+
+				// 3. Кешировано — можно удалить с сервера
 				await waitForCanplaythrough(audioElement);
 				console.log("canplaythrough")
 				
-				// 3. Кешировано — можно удалить с сервера
-				await fetch("https://test.zhmikh.ru/delete", {
+				fetch("https://test.zhmikh.ru/delete", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ filename: data.filename })
 				});
 				
-				requestIdleCallback(Monitor); // еще один безболезненный
+				requestAnimationFrame(() => Monitor()); // еще один безболезненный
 			} catch (e) {
 				console.error("Prepare error:", e);
-				Show("Error loading track.");
+				isPreparing = false;
+				Show(`Error loading track.[2] ${e}`);
+			}
+
+			function waitForCanplaythrough(audio) {
+				return new Promise((resolve, reject) => {
+					const timeout = setTimeout(() => {
+						Show("[ERROR] Please, check your internet connection...", 50);
+						reject(new Error("canplaythrough timeout"));
+					}, 20000); // 20 секунд
+					
+					audio.addEventListener("canplaythrough", () => {
+						clearTimeout(timeout);
+						resolve();
+					}, { once: true });
+				});
 			}
 		}
 
@@ -426,9 +428,7 @@
 
 		async function toNext() {
 			if (isPreparing) { refuse(next); return; }
-			ImitatePlay();
 			animateNext();
-  			isPreparing = true;
 			
 			// 1. Заглушить всё
 			document.querySelectorAll("audio").forEach(a => {
@@ -458,14 +458,11 @@
 			if (TrackList.length >= 50) { TrackList.splice(0, 1); CI--; } // removing first one and moving index
 			updateMediaSession();
 			await Prepare(document.getElementById("audio-next"), nextTrackId);
-			isPreparing = false;
 		}
 
 		async function toPrev() {
 			if (PSID === null || isPreparing) { refuse(prev); return; }
-			ImitatePlay();
 			animatePrev();
-   			isPreparing = true;
 			
 			// 1. Заглушить всё
 			document.querySelectorAll("audio").forEach(a => {
@@ -493,18 +490,18 @@
 			SID = prevTrackId;
 			updateMediaSession();
 			await Prepare(document.getElementById("audio-prev"), prevTrackId);
-  			isPreparing = false;
 		}
 
 		function getNextTrackId() {
-			let x = Math.round(Math.random() * 4)
-			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 4)
-		    return x
+			const AI = [0, 1, 2, 3, 4] // available index
+			const index = Math.floor(Math.random() * AI.length);
+  			return AI[index];
 		}
 
 		
 		function updateMediaSession() {
-			const data = document.getElementById("audio").dataset;
+			const audio = document.getElementById("audio")
+			const data = audio.dataset;
 			document.querySelector(".title").textContent = data.title;
 			document.querySelector(".artist").textContent = data.artist;
 			if ("mediaSession" in navigator) {
@@ -517,6 +514,11 @@
 					]
 				});
 
+				navigator.mediaSession.setPositionState({
+				  duration: audio.duration,
+				  playbackRate: audio.playbackRate,
+				  position: audio.currentTime
+				});
 				
 				if (!MSA) {
 					navigator.mediaSession.setActionHandler("play", () => {
