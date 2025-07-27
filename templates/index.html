@@ -343,7 +343,6 @@
 					body: JSON.stringify({ id: trackId })
 				});
 				const data = await res.json();
-				alert("Server response:", data)
 				
 				if (!data.success || !data.filename) { Show("Error loading track."); isPreparing = false; return; }
 				
@@ -387,7 +386,6 @@
 				console.error("Prepare error:", e);
 				isPreparing = false;
 				Show("Error loading track.");
-				if (IFT) window.location.reload();
 			}
 		}
 
