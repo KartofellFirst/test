@@ -306,10 +306,11 @@
 		})
 		
         SBTN.addEventListener("click", (event) => {
-			const audio = document.getElementById("audio");
+			const audio = document.getElementById("audio"); event.preventDefault();
 			SBTN.classList.add("activated"); prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px"; // decorations
-            if (!PLAY) { if (audio.readyState == 4) { audio.play() } else { Prepare(audio, SID).then(data => {audio.play(); alert("ressurected") }) }; ImitatePlay(); updateMediaSession(); if (audio.paused) ImitatePause();
+            if (!PLAY) { if (audio.readyState == 4) { audio.play() } else { Prepare(audio, SID).then(data => {audio.play(); alert("ressurected") }) }; ImitatePlay(); if (audio.paused) ImitatePause();
 			} else { ImitatePause(); audio.pause(); document.getElementById("audio-next").pause(); document.getElementById("audio-prev").pause(); } 
+			updateMediaSession();
         });
 
 		function ImitatePause() { PLAY = false; label.textContent = "play"; }
