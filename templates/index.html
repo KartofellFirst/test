@@ -527,6 +527,8 @@
 						audio.currentTime = details.seekTime;
 					}
 				});
+
+				navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
 				
 				if (!MSA) {
 					navigator.mediaSession.setActionHandler("play", () => {
