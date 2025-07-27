@@ -6,7 +6,7 @@
 	<link href="https://fonts.googleapis.com/css2?family=Oregano:ital@0;1&display=swap" rel="stylesheet">
 	<link rel="manifest" href="static/manifest.json"> 
 	<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js")</script>
-    <title>Аудио загрузка</title>
+    <title>NT - home</title>
     <style>
         * {
 			margin: 0;
@@ -244,7 +244,7 @@
     </style>
 </head>
 <body>
-	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+<!-- 	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
 		<g id="chaos" transform="rotate(0 50 50)">
 			<line x1="10" y1="10" x2="90" y2="80" stroke="white" stroke-width="0.2" />
 			<line x1="30" y1="70" x2="80" y2="20" stroke="white" stroke-width="0.2" />
@@ -256,7 +256,7 @@
 			<line x1="10" y1="80" x2="100" y2="20" stroke="white" stroke-width="0.2" />
 			<animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="50s" repeatCount="indefinite" />
 		</g>
-	</svg>
+	</svg> -->
 	
     <header>
         <span class="logo">𝄢𓏢NT𓏢𝄢</span>
@@ -316,12 +316,12 @@
 		function ImitatePlay() { PLAY = true; label.textContent = "pause"; } 
 
 		async function Prepare(audioElement, trackId) {
-			if (!trackId) { Show("Track ID is missing — something broke."); return; }
+			if (!trackId) {  isPreparing = false; Show("Track ID is missing — something broke."); return; }
 			
 			function waitForCanplaythrough(audio) {
 				return new Promise((resolve, reject) => {
 					const timeout = setTimeout(() => {
-						Show("[ERROR] Please, check your internet connection, its too slow... This process usually takes 2-3 seconds on old devises, you take more than 10", 50);
+						Show("[ERROR] Please, check your internet connection...", 50);
 						reject(new Error("canplaythrough timeout"));
 					}, 10000); // 10 секунд
 					
@@ -332,6 +332,12 @@
 				});
 			}
 
+			// убеждаемся в трезвости своего ума
+			isPreparing = true;
+			audioElement.pause();
+			audioElement.src = ""; 
+			audioElement.load(); 
+
 			try {
 				const res = await fetch("https://test.zhmikh.ru/play", {
 					method: "POST",
@@ -340,7 +346,7 @@
 				});
 				const data = await res.json();
 				
-				if (!data.success) throw new Error("Failed to fetch track");
+				if (!data.success || !data.filename) { Show("Error loading track."); isPreparing = false; return; }
 				
 				// 1. Обновляем src и загружаем
 				audioElement.src = "https://test.zhmikh.ru/" + data.filename;
@@ -395,6 +401,7 @@
 			setTimeout(() => {
 				next.classList.remove("next");
 			}, 900);
+			ImitatePlay();
 		}
 
 		async function animatePrev() {
@@ -402,6 +409,7 @@
 			setTimeout(() => {
 				prev.classList.remove("prev");
 			}, 900);
+			ImitatePlay();
 		}
 
 		window.addEventListener("blur", () => {
@@ -489,8 +497,8 @@
 		}
 
 		function getNextTrackId() {
-			let x = Math.round(Math.random() * 5)
-			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 5)
+			let x = Math.round(Math.random() * 4)
+			if (TrackList[TrackList.length - 1] == x) x = Math.round(Math.random() * 4)
 		    return x
 		}
 
