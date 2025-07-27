@@ -74,6 +74,7 @@ def delete_file(filename):
     if os.path.isfile(filepath):
         os.remove(filepath)
         spawntime.pop(filename, None)
+        print(f"deleted {filename}")
         return True
     return False
 
@@ -157,44 +158,10 @@ def download():
     success = download_file(url, filename)
     return jsonify({"success": success, "filename": "static/din/" + filename, "data": data})
 
-@app.route("/metadata", methods=["POST"])
-def extract_metadata():
-    data_json = request.get_json()
-    data = data_json.get("data")
-    filename = f"static/din/{data[0]}.jpg"
-
-    # ожидание появления файла
-    timeout = 5
-    while not os.path.exists(filename) or os.path.getsize(filename) == 0:
-        time.sleep(0.2)
-        timeout -= 0.2
-        if timeout <= 0:
-            return jsonify({ "error": "File not ready" })
-
-    audio = MP3(filename, ID3=ID3)
-    metadata = {
-        "title": data[2],
-        "artist": data[3],
-        "album": "NT collection (Spotify+)",
-        "picture": "fill.jpg"
-    }
-
-    for tag in audio.tags.values():
-        if isinstance(tag, APIC):
-            picture_path = filename.replace(".mp3", ".jpg").replace("static/din/", "")
-            full_path = f"static/din/{picture_path}"
-            with open(full_path, 'wb') as img:
-                img.write(tag.data)
-            metadata["picture"] = full_path
-            break
-    return jsonify({ "metadata": metadata })
-
-
 @app.route("/delete", methods=["POST"])
 def delete():
     data = request.get_json()
     filename = data.get("filename")
-    print("deleted" + filename)
     success = delete_file(filename)
     return jsonify({"success": success})
 
