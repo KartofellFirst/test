@@ -505,6 +505,7 @@
 			document.querySelector(".title").textContent = data.title;
 			document.querySelector(".artist").textContent = data.artist;
 			if ("mediaSession" in navigator) {
+				navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
 				navigator.mediaSession.metadata = new MediaMetadata({
 					title: data.title || "example title",
 					artist: data.artist || "unknown artist",
@@ -527,8 +528,6 @@
 						audio.currentTime = details.seekTime;
 					}
 				});
-
-				navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
 				
 				if (!MSA) {
 					navigator.mediaSession.setActionHandler("play", () => {
