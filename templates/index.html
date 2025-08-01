@@ -261,13 +261,20 @@
 			right: 0px;		
 		}
 
-		.hidden {display: none}
+		.hidden {
+			visibility: hidden;
+			position: absolute;
+			width: 0;
+			height: 0;
+			overflow: hidden;
+		}
+
     </style>
 </head>
 <body>
 		<div id="bg-animation" class="hidden">
 			<div style="width: 200px; height: 200px; background-image: url('/static/cattt.png');"></div>
-			<video autoplay muted loop src="/static/IMG_1773.MP4">
+			<video autoplay muted loop playsinline src="/static/IMG_1773.MP4">
 		</div>
 <!-- 	<svg id="bg-animation" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
 		<g id="chaos" transform="rotate(0 50 50)">
@@ -332,9 +339,12 @@
 			event.preventDefault();
 			const target = document.querySelector("#bg-animation.hidden");
 			target.classList.remove("hidden");
-			taget.querySelector("video").play();
-		}, {"once": true})
-		
+			
+			const video = target.querySelector("video");
+			video.load(); // ← важно для Safari
+			video.play().catch(err => console.warn("Video play failed:", err));
+		}, { once: true });
+
         SBTN.addEventListener("click", (event) => {
 			const audio = document.getElementById("audio"); event.preventDefault();
 			SBTN.classList.add("activated"); prev.textContent = "<"; prev.style.width = "40px"; next.textContent = ">"; next.style.width = "40px"; // decorations
